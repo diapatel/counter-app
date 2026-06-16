@@ -694,8 +694,8 @@ html, body {
   <div class="tap-zone" id="tapZone">
     <div class="ripple-layer" id="rippleLayer"></div>
     <div class="count-label">COUNT</div>
-    <div class="count-number" id="ctrNum" onclick="openEditSheet()">0</div>
-    <div class="count-edit-hint">Tap number to edit</div>
+    <div class="count-number" id="ctrNum" onclick="openEditSheet(event)">0</div>
+    <div class="count-edit-hint">Hold number to edit</div>
     <div class="count-today-label" id="ctrToday">Today: <strong>0</strong></div>
     <div class="step-indicator" id="stepIndicator">+1 per tap</div>
   </div>
@@ -1059,7 +1059,8 @@ function saveCustomStep() {
 }
 
 // ── EDIT COUNT ──
-function openEditSheet() {
+function openEditSheet(e) {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
   const c = getC(activeId);
   document.getElementById('editCountInput').value = c.total;
   document.getElementById('editCountSheet').classList.add('open');
@@ -1087,8 +1088,46 @@ function saveEditCount() {
 // ── TAP ──
 function setupTap() {
   const zone = document.getElementById('tapZone');
-  zone.onclick = e => { if (!e.target.closest('button')) handleTap(e); };
-  zone.ontouchend = e => { e.preventDefault(); if (!e.target.closest('button')) handleTap(e); };
+  const numEl = document.getElementById('ctrNum');
+
+  // Long press on number = edit, short tap = increment
+  let pressTimer = null;
+  let didLongPress = false;
+
+  numEl.addEventListener('touchstart', e => {
+    didLongPress = false;
+    pressTimer = setTimeout(() => {
+      didLongPress = true;
+      openEditSheet(e);
+      // haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 500);
+  }, { passive: true });
+
+  numEl.addEventListener('touchend', e => {
+    clearTimeout(pressTimer);
+    if (!didLongPress) {
+      // short tap = just increment like rest of zone
+      e.preventDefault();
+      e.stopPropagation();
+      const t = e.changedTouches[0];
+      handleTap({ clientX: t.clientX, clientY: t.clientY, changedTouches: e.changedTouches });
+    }
+  });
+
+  numEl.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+
+  // also support mouse long press on desktop
+  numEl.addEventListener('mousedown', () => {
+    didLongPress = false;
+    pressTimer = setTimeout(() => { didLongPress = true; openEditSheet(); }, 500);
+  });
+  numEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
+  numEl.onclick = e => { if (didLongPress) { e.stopPropagation(); } };
+
+  // rest of tap zone = increment normally
+  zone.onclick = e => { if (e.target === numEl || e.target.closest && e.target.closest('#ctrNum')) return; if (!e.target.closest('button')) handleTap(e); };
+  zone.ontouchend = e => { if (e.target === numEl || (e.target.closest && e.target.closest('#ctrNum'))) return; e.preventDefault(); if (!e.target.closest('button')) handleTap(e); };
 }
 
 function handleTap(e) {
