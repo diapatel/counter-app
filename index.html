@@ -528,6 +528,72 @@ html, body {
 .stat-val { font-family: 'Google Sans Display', sans-serif; font-size: 32px; font-weight: 300; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
 .stat-sub { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
 
+/* STEP ROW */
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+.step-label {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.step-chips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.step-chips::-webkit-scrollbar { display: none; }
+.step-chip {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Google Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.step-chip.active {
+  background: var(--primary-dim);
+  border-color: var(--primary-dim);
+  color: var(--primary);
+}
+.step-chip:active { opacity: 0.7; }
+
+.count-edit-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 6px;
+  z-index: 2;
+  letter-spacing: 0.3px;
+}
+
+/* STEP DISPLAY on tap zone */
+.step-indicator {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 4px;
+  z-index: 2;
+  background: rgba(208,188,255,0.1);
+  border-radius: 100px;
+  padding: 3px 12px;
+}
+
 /* ── MODALS ── */
 .backdrop {
   position: fixed; inset: 0;
@@ -628,8 +694,23 @@ html, body {
   <div class="tap-zone" id="tapZone">
     <div class="ripple-layer" id="rippleLayer"></div>
     <div class="count-label">COUNT</div>
-    <div class="count-number" id="ctrNum">0</div>
+    <div class="count-number" id="ctrNum" onclick="openEditSheet()">0</div>
+    <div class="count-edit-hint">Tap number to edit</div>
     <div class="count-today-label" id="ctrToday">Today: <strong>0</strong></div>
+    <div class="step-indicator" id="stepIndicator">+1 per tap</div>
+  </div>
+
+  <div class="step-row">
+    <span class="step-label">STEP</span>
+    <div class="step-chips" id="stepChips">
+      <button class="step-chip active" onclick="setStep(1, this)">1</button>
+      <button class="step-chip" onclick="setStep(5, this)">5</button>
+      <button class="step-chip" onclick="setStep(10, this)">10</button>
+      <button class="step-chip" onclick="setStep(25, this)">25</button>
+      <button class="step-chip" onclick="setStep(50, this)">50</button>
+      <button class="step-chip" onclick="setStep(100, this)">100</button>
+      <button class="step-chip" onclick="openCustomStepSheet()">Custom…</button>
+    </div>
   </div>
 
   <div class="action-bar">
@@ -706,6 +787,30 @@ html, body {
   </div>
 </div>
 
+<div class="backdrop" id="editCountSheet" onclick="closeSheet('editCountSheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Edit Count</div>
+    <input class="sheet-input" id="editCountInput" placeholder="Enter new count" type="number" inputmode="numeric" autocomplete="off">
+    <div class="sheet-actions">
+      <button class="sheet-btn cancel" onclick="closeSheet('editCountSheet')">Cancel</button>
+      <button class="sheet-btn confirm" onclick="saveEditCount()">Set</button>
+    </div>
+  </div>
+</div>
+
+<div class="backdrop" id="customStepSheet" onclick="closeSheet('customStepSheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Custom Step</div>
+    <input class="sheet-input" id="customStepInput" placeholder="e.g. 111" type="number" inputmode="numeric" autocomplete="off">
+    <div class="sheet-actions">
+      <button class="sheet-btn cancel" onclick="closeSheet('customStepSheet')">Cancel</button>
+      <button class="sheet-btn confirm" onclick="saveCustomStep()">Set</button>
+    </div>
+  </div>
+</div>
+
 <div class="backdrop" id="deleteSheet" onclick="closeSheet('deleteSheet',event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -723,6 +828,7 @@ html, body {
 <script>
 // ── VIEW MODE ──
 let viewMode = localStorage.getItem('viewMode') || 'list';
+let currentStep = 1;
 
 function setView(mode) {
   viewMode = mode;
@@ -899,6 +1005,17 @@ function renderList() {
 // ── OPEN COUNTER ──
 function openCounter(id) {
   activeId = id;
+  currentStep = 1;
+  // reset step chips UI
+  document.querySelectorAll('.step-chip').forEach((c,i) => {
+    c.classList.remove('active');
+    if (i === 0) c.classList.add('active');
+  });
+  // reset custom chip label
+  const chips = document.querySelectorAll('.step-chip');
+  chips[chips.length-1].textContent = 'Custom…';
+  chips[chips.length-1].onclick = () => openCustomStepSheet();
+  document.getElementById('stepIndicator').textContent = '+1 per tap';
   refreshCounter();
   navTo('counterScreen');
   setupTap();
@@ -911,6 +1028,60 @@ function refreshCounter() {
   document.getElementById('ctrNum').textContent = c.total.toLocaleString();
   document.getElementById('ctrNum').classList.toggle('negative', c.total < 0);
   document.getElementById('ctrToday').innerHTML = `Today: <strong>${todayOf(c)}</strong>`;
+}
+
+// ── STEP ──
+function setStep(n, btn) {
+  currentStep = n;
+  document.querySelectorAll('.step-chip').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('stepIndicator').textContent = `+${n} per tap`;
+}
+
+function openCustomStepSheet() {
+  document.getElementById('customStepInput').value = '';
+  document.getElementById('customStepSheet').classList.add('open');
+  setTimeout(() => document.getElementById('customStepInput').focus(), 350);
+}
+
+function saveCustomStep() {
+  const val = parseInt(document.getElementById('customStepInput').value);
+  if (!val || val < 1) { snack('Enter a valid number'); return; }
+  currentStep = val;
+  // deselect all chips, mark custom
+  document.querySelectorAll('.step-chip').forEach(c => c.classList.remove('active'));
+  const last = document.querySelector('.step-chip:last-child');
+  last.textContent = val;
+  last.classList.add('active');
+  last.onclick = () => setStep(val, last);
+  document.getElementById('stepIndicator').textContent = `+${val} per tap`;
+  closeSheet('customStepSheet');
+}
+
+// ── EDIT COUNT ──
+function openEditSheet() {
+  const c = getC(activeId);
+  document.getElementById('editCountInput').value = c.total;
+  document.getElementById('editCountSheet').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('editCountInput');
+    inp.focus();
+    inp.select();
+  }, 350);
+}
+
+function saveEditCount() {
+  const val = parseInt(document.getElementById('editCountInput').value);
+  if (isNaN(val)) { snack('Enter a valid number'); return; }
+  const c = getC(activeId);
+  c.hist.push(c.total);
+  c.total = val;
+  // update today's count to reflect edit (set to val if editing makes sense)
+  save();
+  refreshCounter();
+  pop();
+  closeSheet('editCountSheet');
+  snack(`Count set to ${val.toLocaleString()}`);
 }
 
 // ── TAP ──
@@ -935,13 +1106,13 @@ function increment(x, y) {
   const c = getC(activeId);
   c.hist.push(c.total);
   if (c.hist.length > 200) c.hist.shift();
-  c.total++;
-  c.days[todayKey()] = (c.days[todayKey()] || 0) + 1;
+  c.total += currentStep;
+  c.days[todayKey()] = (c.days[todayKey()] || 0) + currentStep;
   save();
   refreshCounter();
   pop();
   spawnRipple(x, y);
-  spawnFly(x, y);
+  spawnFly(x, y, currentStep);
 }
 
 function doUndo() {
@@ -984,10 +1155,10 @@ function spawnRipple(x, y) {
   r.addEventListener('animationend', () => r.remove());
 }
 
-function spawnFly(x, y) {
+function spawnFly(x, y, step = 1) {
   const el = document.createElement('div');
   el.className = 'fly';
-  el.textContent = '+1';
+  el.textContent = `+${step}`;
   el.style.left = (x - 18) + 'px';
   el.style.top  = (y - 18) + 'px';
   document.body.appendChild(el);
@@ -1129,6 +1300,8 @@ function confirmDelete() {
 // Enter keys
 document.getElementById('newInput').addEventListener('keydown', e => { if (e.key==='Enter') createCounter(); });
 document.getElementById('renameInput').addEventListener('keydown', e => { if (e.key==='Enter') saveRename(); });
+document.getElementById('editCountInput').addEventListener('keydown', e => { if (e.key==='Enter') saveEditCount(); });
+document.getElementById('customStepInput').addEventListener('keydown', e => { if (e.key==='Enter') saveCustomStep(); });
 
 // ── INIT ──
 setView(viewMode);
