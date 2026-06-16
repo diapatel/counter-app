@@ -3,688 +3,474 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0F0D13">
+<meta name="theme-color" content="#0A0A0F">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>Counter</title>
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Display:wght@300;400&family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Count It</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0F0D13;
-  --surface: #1C1B1F;
-  --surface2: #28263C;
-  --primary: #D0BCFF;
-  --primary-dim: #6650A4;
-  --on-primary: #21005D;
-  --text: #E6E1E5;
-  --text-dim: #9A8FB0;
-  --text-faint: #49454F;
-  --border: #2E2B3A;
-  --red: #CF6679;
-  --green: #81C784;
+  --bg: #0A0A0F;
+  --surface: #13121A;
+  --surface2: #1C1B26;
+  --surface3: #252438;
+  --text: #F0EEF8;
+  --text-dim: #8B89A8;
+  --text-faint: #3D3C52;
+  --border: #1E1D2E;
+  --border2: #2A293D;
   --safe: env(safe-area-inset-bottom, 0px);
+
+  /* per-counter color — overridden by JS */
+  --c: #7C6FCD;
+  --c-bright: #A99EE8;
+  --c-dim: rgba(124,111,205,0.15);
+  --c-glow: rgba(124,111,205,0.25);
+  --c-bg: #0E0D18;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
-
-html, body {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  font-family: 'Google Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
+html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
 
 /* ── SCREENS ── */
 .screen {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
   overflow: hidden;
-  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.32s;
+  transition: transform 0.34s cubic-bezier(0.4,0,0.2,1), opacity 0.34s;
   will-change: transform;
 }
 .screen.off-right { transform: translateX(100%); pointer-events: none; }
-.screen.off-left  { transform: translateX(-25%); opacity: 0.4; pointer-events: none; }
+.screen.off-left  { transform: translateX(-20%); opacity: 0.3; pointer-events: none; }
 
-/* ── SHARED TOP BAR ── */
-.top-bar {
-  display: flex;
-  align-items: center;
-  padding: 52px 4px 4px;
-  flex-shrink: 0;
-  min-height: 104px;
-  gap: 0;
-}
-.top-bar-title {
-  flex: 1;
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  padding: 0 8px;
-  color: var(--text);
-  line-height: 1.2;
-  word-break: break-word;
-}
+/* ── ICON BTN ── */
 .icon-btn {
-  width: 52px; height: 52px;
-  min-width: 52px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim);
-  position: relative; overflow: hidden;
+  width: 48px; height: 48px; min-width: 48px;
+  border-radius: 50%; border: none; background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim); position: relative; overflow: hidden;
   transition: background 0.15s;
 }
-.icon-btn:active { background: rgba(208,188,255,0.14); }
-.icon-btn svg { width: 24px; height: 24px; pointer-events: none; }
+.icon-btn:active { background: rgba(255,255,255,0.06); }
+.icon-btn svg { width: 22px; height: 22px; pointer-events: none; }
 
-/* ── LIST SCREEN ── */
+/* ══════════ LIST SCREEN ══════════ */
 #listScreen { background: var(--bg); }
 
-.list-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding: 8px 16px calc(96px + var(--safe));
+.list-top {
+  padding: 56px 20px 0;
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-top-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  color: var(--text);
+  line-height: 1;
+}
+.list-top-right { display: flex; gap: 4px; align-items: center; }
+
+/* view toggle */
+.vtoggle {
+  display: flex; gap: 2px;
+  background: var(--surface);
+  border-radius: 12px; padding: 3px;
+  border: 1px solid var(--border);
+}
+.vbtn {
+  width: 34px; height: 34px; border-radius: 9px;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-faint); transition: background 0.15s, color 0.15s;
+}
+.vbtn.on { background: var(--surface3); color: var(--text); }
+.vbtn svg { width: 16px; height: 16px; pointer-events: none; }
+
+/* total pill */
+.total-pill {
+  margin: 16px 20px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.total-pill-label { font-size: 12px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; }
+.total-pill-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 400; color: var(--text); letter-spacing: -0.5px; }
+
+/* list scroll */
+.list-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px 16px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .list-scroll::-webkit-scrollbar { display: none; }
 
-.counter-row {
+/* counter row */
+.ctr-row {
   background: var(--surface);
-  border-radius: 20px;
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
+  border-radius: 18px;
   border: 1px solid var(--border);
-  transition: background 0.12s, transform 0.1s;
-  min-height: 80px;
-  position: relative;
-  overflow: hidden;
+  display: flex; align-items: center;
+  padding: 16px 16px 16px 20px;
+  gap: 14px; cursor: pointer; min-height: 76px;
+  position: relative; overflow: hidden;
+  transition: transform 0.12s, background 0.12s;
 }
-.counter-row:active { background: #252232; transform: scale(0.985); }
-.row-info { flex: 1; min-width: 0; }
-.row-name {
-  font-size: 17px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.3;
-  word-break: break-word;
+.ctr-row::before {
+  content: '';
+  position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 3px; border-radius: 0 2px 2px 0;
+  background: var(--c);
+  opacity: 0.8;
 }
-.row-meta {
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.ctr-row:active { transform: scale(0.982); background: var(--surface2); }
+.ctr-row-info { flex: 1; min-width: 0; }
+.ctr-row-name { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.3; word-break: break-word; }
+.ctr-row-meta { font-size: 12px; color: var(--text-dim); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.today-tag {
+  background: var(--c-dim); color: var(--c-bright);
+  border-radius: 100px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600;
 }
-.today-pill {
-  background: rgba(208,188,255,0.14);
-  color: var(--primary);
-  border-radius: 100px;
-  padding: 2px 9px;
-  font-size: 11px;
-  font-weight: 600;
+.ctr-row-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 28px; font-weight: 400;
+  color: var(--c-bright); letter-spacing: -1px; line-height: 1;
+  flex-shrink: 0; min-width: 48px; text-align: right;
 }
-.row-total {
-  font-family: 'Google Sans Display', sans-serif;
-  font-size: 36px;
-  font-weight: 300;
-  color: var(--primary);
-  letter-spacing: -1px;
-  line-height: 1;
-  flex-shrink: 0;
-  min-width: 56px;
-  text-align: right;
-}
-.row-delete {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  border: none; background: transparent;
-  cursor: pointer;
+.ctr-row-del {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: none; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-faint);
-  flex-shrink: 0;
+  color: var(--text-faint); flex-shrink: 0;
   transition: color 0.15s, background 0.15s;
 }
-.row-delete:active { color: var(--red); background: rgba(207,102,121,0.1); }
-.row-delete svg { width: 18px; height: 18px; pointer-events: none; }
+.ctr-row-del:active { color: #FF6B8A; background: rgba(255,107,138,0.1); }
+.ctr-row-del svg { width: 17px; height: 17px; pointer-events: none; }
 
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: var(--text-faint);
-  padding-bottom: 100px;
-}
-.empty-state svg { width: 64px; height: 64px; opacity: 0.25; }
-.empty-state p { font-size: 16px; }
-
-/* ── TILE GRID VIEW ── */
+/* tile grid */
 .tile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 8px 16px calc(96px + var(--safe));
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  flex: 1;
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; padding: 12px 16px 16px;
+  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
 }
 .tile-grid::-webkit-scrollbar { display: none; }
 
-.counter-tile {
+.ctr-tile {
   background: var(--surface);
-  border-radius: 24px;
+  border-radius: 22px;
   border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 18px 12px 14px;
-  gap: 6px;
-  position: relative;
-  overflow: hidden;
-  min-height: 170px;
-  cursor: pointer;
-  transition: background 0.12s, transform 0.1s;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 14px 14px; gap: 4px;
+  cursor: pointer; min-height: 180px; position: relative; overflow: hidden;
+  transition: transform 0.12s, background 0.12s;
 }
-.counter-tile:active { background: #252232; transform: scale(0.97); }
-.tile-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-dim);
-  text-align: center;
-  line-height: 1.3;
-  word-break: break-word;
-  width: 100%;
+.ctr-tile::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--c-glow) 0%, transparent 65%);
+  pointer-events: none;
 }
-.tile-count {
-  font-family: 'Google Sans Display', sans-serif;
-  font-size: clamp(40px, 12vw, 56px);
-  font-weight: 300;
-  color: var(--text);
-  letter-spacing: -2px;
-  line-height: 1;
-  flex: 1;
-  display: flex;
-  align-items: center;
+.ctr-tile:active { transform: scale(0.96); background: var(--surface2); }
+.tile-name { font-size: 13px; font-weight: 600; color: var(--text-dim); text-align: center; line-height: 1.3; word-break: break-word; width: 100%; }
+.tile-num {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(36px, 10vw, 52px); font-weight: 300;
+  color: var(--c-bright); letter-spacing: -2px; line-height: 1;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s;
 }
-.tile-today {
-  font-size: 11px;
-  color: var(--text-faint);
-  font-weight: 500;
-}
-.tile-today strong { color: var(--primary); }
-.tile-actions {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  margin-top: 4px;
-}
+.tile-today { font-size: 11px; color: var(--text-faint); font-weight: 500; }
+.tile-today strong { color: var(--c-bright); }
+.tile-btns { display: flex; gap: 6px; width: 100%; margin-top: 6px; }
 .tile-btn {
-  flex: 1;
-  height: 40px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.12s, transform 0.1s;
-  font-size: 22px;
-  font-weight: 300;
+  flex: 1; height: 42px; border-radius: 12px; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 300; transition: opacity 0.1s, transform 0.1s;
 }
-.tile-btn:active { transform: scale(0.92); }
-.tile-btn.minus { background: rgba(207,102,121,0.15); color: var(--red); }
-.tile-btn.minus:active { background: rgba(207,102,121,0.28); }
-.tile-btn.plus  { background: rgba(208,188,255,0.15); color: var(--primary); }
-.tile-btn.plus:active  { background: rgba(208,188,255,0.28); }
+.tile-btn:active { transform: scale(0.9); opacity: 0.7; }
+.tile-btn.tm { background: rgba(255,107,138,0.12); color: #FF6B8A; }
+.tile-btn.tp { background: var(--c-dim); color: var(--c-bright); }
 
-/* view toggle buttons */
-.view-toggle {
-  display: flex;
-  gap: 4px;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 4px;
-  margin-right: 4px;
+/* empty state */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; color: var(--text-faint); padding-bottom: 100px;
 }
-.vtoggle-btn {
-  width: 36px; height: 36px;
-  border-radius: 9px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-faint);
-  transition: background 0.15s, color 0.15s;
-}
-.vtoggle-btn.active { background: var(--primary-dim); color: var(--primary); }
-.vtoggle-btn svg { width: 18px; height: 18px; pointer-events: none; }
+.empty-state svg { width: 56px; height: 56px; opacity: 0.2; }
+.empty-state p { font-size: 15px; font-weight: 500; }
 
 /* FAB */
 .fab {
-  position: fixed;
-  bottom: calc(28px + var(--safe));
-  right: 24px;
-  width: 64px; height: 64px;
-  border-radius: 20px;
-  border: none;
-  background: var(--primary);
-  color: var(--on-primary);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 24px rgba(103,80,164,0.5);
-  z-index: 20;
+  position: fixed; bottom: calc(72px + var(--safe)); right: 20px;
+  width: 60px; height: 60px; border-radius: 18px;
+  border: none; background: var(--text); color: var(--bg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 20;
   transition: transform 0.12s, box-shadow 0.12s;
 }
-.fab:active { transform: scale(0.93); box-shadow: 0 2px 12px rgba(103,80,164,0.4); }
-.fab svg { width: 30px; height: 30px; }
+.fab:active { transform: scale(0.92); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.fab svg { width: 26px; height: 26px; }
 
-/* ── COUNTER SCREEN ── */
-#counterScreen { background: var(--bg); }
+/* ══════════ COUNTER SCREEN ══════════ */
+#counterScreen { background: var(--c-bg); transition: background 0.4s; }
 
-.counter-top {
-  display: flex;
-  align-items: flex-start;
-  padding: 52px 4px 0;
-  flex-shrink: 0;
-  gap: 0;
+.ctr-top {
+  display: flex; align-items: flex-start;
+  padding: 52px 6px 0; flex-shrink: 0;
 }
-.counter-name-wrap {
-  flex: 1;
-  padding: 10px 8px 0;
-  cursor: pointer;
-  min-width: 0;
+.ctr-name-wrap {
+  flex: 1; padding: 10px 8px 0; cursor: pointer; min-width: 0;
 }
-.counter-name-wrap:active { opacity: 0.6; }
-.counter-name-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.3;
-  word-break: break-word;
-}
-.edit-hint {
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-top: 2px;
-  letter-spacing: 0.3px;
-}
+.ctr-name-wrap:active { opacity: 0.6; }
+.ctr-name-text { font-size: 19px; font-weight: 700; color: var(--text); line-height: 1.3; word-break: break-word; letter-spacing: -0.3px; }
+.ctr-rename-hint { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
-/* TAP ZONE — takes all remaining space */
+/* tap zone */
 .tap-zone {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  /* large enough to always fill screen comfortably */
-  min-height: 0;
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden; cursor: pointer; min-height: 0;
 }
 .ripple-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(208,188,255,0.09);
-  transform: scale(0);
-  animation: rout 0.6s ease-out forwards;
-  pointer-events: none;
+  position: absolute; border-radius: 50%;
+  background: var(--c-glow);
+  transform: scale(0); animation: rout 0.7s ease-out forwards; pointer-events: none;
 }
 @keyframes rout { to { transform: scale(1); opacity: 0; } }
 
-.count-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  margin-bottom: 10px;
-  z-index: 2;
+/* ambient glow behind number */
+.count-glow {
+  position: absolute;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c-glow) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+  transition: background 0.4s;
 }
-.count-number {
-  font-family: 'Google Sans Display', sans-serif;
-  font-size: clamp(88px, 30vw, 160px);
-  font-weight: 300;
-  color: var(--text);
-  line-height: 1;
-  letter-spacing: -4px;
-  z-index: 2;
+
+.count-label-txt {
+  font-size: 10px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--text-faint);
+  margin-bottom: 8px; z-index: 2;
+}
+.count-num {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(80px, 26vw, 148px); font-weight: 300;
+  color: var(--text); line-height: 1; letter-spacing: -4px;
+  z-index: 2; cursor: pointer;
   transition: color 0.2s;
 }
-.count-number.negative { color: var(--red); }
-.count-number.pop { animation: pop 0.2s cubic-bezier(0.34,1.56,0.64,1); }
-@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.09)} 100%{transform:scale(1)} }
+.count-num.neg { color: #FF6B8A; }
+.count-num.pop { animation: pop 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
 
-.count-today-label {
-  font-size: 14px;
-  color: var(--text-dim);
-  margin-top: 16px;
-  z-index: 2;
+.hold-hint { font-size: 11px; color: var(--text-faint); margin-top: 8px; z-index: 2; }
+
+.today-txt { font-size: 13px; color: var(--text-dim); margin-top: 10px; z-index: 2; }
+.today-txt strong { color: var(--c-bright); font-weight: 600; transition: color 0.4s; }
+
+.step-badge {
+  margin-top: 8px; z-index: 2;
+  background: var(--c-dim); color: var(--c-bright);
+  border-radius: 100px; padding: 4px 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+  transition: background 0.4s, color 0.4s;
 }
-.count-today-label strong { color: var(--primary); font-weight: 600; }
 
 .fly {
-  position: absolute;
-  font-family: 'Google Sans Display', sans-serif;
-  font-size: 28px;
-  font-weight: 400;
-  color: var(--primary);
-  pointer-events: none;
-  z-index: 5;
-  animation: flyup 0.65s ease-out forwards;
+  position: absolute; font-family: 'DM Mono', monospace;
+  font-size: 26px; font-weight: 400; color: var(--c-bright);
+  pointer-events: none; z-index: 5;
+  animation: flyup 0.6s ease-out forwards;
 }
-@keyframes flyup { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.65)} }
+@keyframes flyup { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.6)} }
 
-/* BOTTOM ACTION BAR */
+/* step chips */
+.step-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 20px 10px; flex-shrink: 0;
+}
+.step-lbl { font-size: 11px; font-weight: 700; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+.step-chips { display: flex; gap: 6px; flex: 1; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.step-chips::-webkit-scrollbar { display: none; }
+.step-chip {
+  flex-shrink: 0; height: 32px; padding: 0 14px;
+  border-radius: 100px; border: 1.5px solid var(--border2);
+  background: transparent; color: var(--text-dim);
+  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.step-chip.on { background: var(--c-dim); border-color: var(--c); color: var(--c-bright); }
+.step-chip:active { opacity: 0.7; }
+
+/* action bar */
 .action-bar {
-  display: flex;
-  align-items: stretch;
-  padding: 0 8px calc(16px + var(--safe)) 8px;
-  gap: 6px;
-  flex-shrink: 0;
-  background: linear-gradient(to top, var(--bg) 80%, transparent);
-  padding-top: 12px;
+  display: flex; align-items: stretch;
+  padding: 8px 16px 12px; gap: 8px; flex-shrink: 0;
 }
-.action-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 14px 8px;
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-  color: var(--text-dim);
+.act-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  padding: 14px 8px; border-radius: 18px;
+  border: 1px solid var(--border2); background: var(--surface);
+  cursor: pointer; color: var(--text-dim); min-height: 72px;
   transition: background 0.12s, color 0.12s, transform 0.1s;
-  min-height: 70px;
 }
-.action-btn:active { background: #252232; color: var(--primary); transform: scale(0.95); }
-.action-btn svg { width: 22px; height: 22px; }
-.action-btn span { font-size: 11px; font-weight: 500; letter-spacing: 0.3px; }
-.action-btn.primary-btn {
-  background: var(--primary);
-  color: var(--on-primary);
-  border-color: transparent;
-  flex: 1.6;
+.act-btn:active { background: var(--surface2); color: var(--text); transform: scale(0.95); }
+.act-btn svg { width: 20px; height: 20px; }
+.act-btn span { font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+.act-btn.primary {
+  background: var(--c); color: #fff; border-color: transparent; flex: 1.5;
+  box-shadow: 0 4px 20px var(--c-glow);
+  transition: background 0.4s, box-shadow 0.4s, transform 0.1s;
 }
-.action-btn.primary-btn:active { background: #b8a0e8; color: var(--on-primary); }
+.act-btn.primary:active { opacity: 0.85; transform: scale(0.95); }
 
-/* ── CALENDAR SCREEN ── */
+/* ══════════ CALENDAR SCREEN ══════════ */
 #calendarScreen { background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 #calendarScreen::-webkit-scrollbar { display: none; }
 
-.cal-top {
-  display: flex;
-  align-items: flex-start;
-  padding: 52px 4px 0;
-  flex-shrink: 0;
-}
+.cal-top { display: flex; align-items: flex-start; padding: 52px 6px 0; flex-shrink: 0; }
 .cal-title-wrap { flex: 1; padding: 8px 8px 0; }
-.cal-counter-name { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.3; word-break: break-word; }
-.cal-subtitle { font-size: 12px; color: var(--text-faint); margin-top: 3px; }
+.cal-ctr-name { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.3; word-break: break-word; letter-spacing: -0.3px; }
+.cal-sub { font-size: 12px; color: var(--text-faint); margin-top: 3px; }
 
-.cal-month-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 16px 8px;
-  flex-shrink: 0;
-}
-.cal-month-label { font-size: 17px; font-weight: 600; color: var(--text); }
-.cal-nav-btn {
-  width: 44px; height: 44px;
-  border-radius: 50%; border: none; background: transparent;
-  cursor: pointer; color: var(--text-dim);
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.12s;
-}
-.cal-nav-btn:active { background: rgba(208,188,255,0.12); }
-.cal-nav-btn svg { width: 22px; height: 22px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 8px; }
+.cal-month { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.cal-nav-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent; cursor: pointer; color: var(--text-dim); display: flex; align-items: center; justify-content: center; transition: background 0.12s; }
+.cal-nav-btn:active { background: var(--surface2); }
+.cal-nav-btn svg { width: 20px; height: 20px; }
 
-.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 12px; flex-shrink: 0; }
-.cal-dow-cell { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-faint); padding: 6px 0; letter-spacing: 0.8px; }
+.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 12px; }
+.dow-cell { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-faint); padding: 6px 0; letter-spacing: 0.8px; }
 
-.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; padding: 4px 12px 0; flex-shrink: 0; }
-.cal-cell {
-  aspect-ratio: 1;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  border-radius: 14px;
-  cursor: pointer;
-  gap: 1px;
-  transition: background 0.12s;
-  position: relative;
-}
-.cal-cell:active { background: rgba(208,188,255,0.1); }
-.cal-cell.empty { pointer-events: none; }
-.cal-cell-date { font-size: 14px; color: var(--text-dim); line-height: 1; font-weight: 400; }
-.cal-cell.has-count .cal-cell-date { color: var(--text); font-weight: 600; }
-.cal-cell.is-today .cal-cell-date {
-  background: var(--primary); color: var(--on-primary);
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 600;
-}
-.cal-cell-count { font-size: 10px; font-weight: 700; color: var(--primary); line-height: 1; }
-.cal-cell.heat-mid { background: rgba(208,188,255,0.07); }
-.cal-cell.heat-high { background: rgba(208,188,255,0.15); }
-.cal-cell.selected { outline: 2px solid var(--primary); outline-offset: 0px; border-radius: 14px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; padding: 4px 12px 0; }
+.cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; cursor: pointer; gap: 2px; transition: background 0.12s; }
+.cal-cell:active { background: var(--surface2); }
+.cal-cell.mt0 { pointer-events: none; }
+.cell-date { font-size: 13px; color: var(--text-dim); line-height: 1; font-weight: 400; }
+.cal-cell.has-data .cell-date { color: var(--text); font-weight: 600; }
+.cal-cell.is-today .cell-date { background: var(--c); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: background 0.4s; }
+.cell-cnt { font-size: 9px; font-weight: 700; color: var(--c-bright); line-height: 1; transition: color 0.4s; }
+.cal-cell.heat1 { background: rgba(var(--cr),0.06); }
+.cal-cell.heat2 { background: rgba(var(--cr),0.14); }
+.cal-cell.heat3 { background: rgba(var(--cr),0.24); }
+.cal-cell.sel { outline: 2px solid var(--c); outline-offset: 0; border-radius: 12px; }
 
-/* Selected day card */
-.cal-day-card {
-  margin: 16px 16px 0;
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-height: 80px;
-}
-.cal-day-card-info { flex: 1; }
-.cal-day-card-date { font-size: 14px; color: var(--text-dim); margin-bottom: 4px; }
-.cal-day-card-count {
-  font-family: 'Google Sans Display', sans-serif;
-  font-size: 48px; font-weight: 300;
-  color: var(--primary); letter-spacing: -1.5px; line-height: 1;
-}
-.cal-day-card-label { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
-.cal-day-empty { color: var(--text-faint); font-size: 15px; }
+.day-card { margin: 14px 14px 0; background: var(--surface); border-radius: 20px; padding: 18px 20px; border: 1px solid var(--border); min-height: 80px; display: flex; align-items: center; }
+.day-card-info { flex: 1; }
+.day-card-date { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+.day-card-num { font-family: 'DM Mono', monospace; font-size: 48px; font-weight: 300; color: var(--c-bright); letter-spacing: -2px; line-height: 1; transition: color 0.4s; }
+.day-card-lbl { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.day-card-empty { font-size: 15px; color: var(--text-faint); }
 
-/* Stats grid */
-.cal-stats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; padding: 12px 16px calc(32px + var(--safe));
-  flex-shrink: 0;
-}
-.stat-card {
-  background: var(--surface); border-radius: 20px;
-  padding: 16px 18px; border: 1px solid var(--border);
-}
-.stat-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
-.stat-val { font-family: 'Google Sans Display', sans-serif; font-size: 32px; font-weight: 300; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
+.cal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 14px 16px; }
+.stat { background: var(--surface); border-radius: 18px; padding: 16px 18px; border: 1px solid var(--border); }
+.stat-lbl { font-size: 10px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 300; color: var(--text); letter-spacing: -0.5px; line-height: 1; }
 .stat-sub { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
 
-/* STEP ROW */
-.step-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px 10px;
-  flex-shrink: 0;
-}
-.step-label {
-  font-size: 12px;
-  color: var(--text-faint);
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-}
-.step-chips {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.step-chips::-webkit-scrollbar { display: none; }
-.step-chip {
-  flex-shrink: 0;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 100px;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: 'Google Sans', sans-serif;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-  white-space: nowrap;
-}
-.step-chip.active {
-  background: var(--primary-dim);
-  border-color: var(--primary-dim);
-  color: var(--primary);
-}
-.step-chip:active { opacity: 0.7; }
-
-.count-edit-hint {
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-top: 6px;
-  z-index: 2;
-  letter-spacing: 0.3px;
-}
-
-/* STEP DISPLAY on tap zone */
-.step-indicator {
-  font-size: 13px;
-  color: var(--primary);
-  font-weight: 600;
-  margin-top: 4px;
-  z-index: 2;
-  background: rgba(208,188,255,0.1);
-  border-radius: 100px;
-  padding: 3px 12px;
-}
-
-/* ── MODALS ── */
-.backdrop {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
-  z-index: 60;
-  display: flex; align-items: flex-end;
-  opacity: 0; transition: opacity 0.25s;
-  pointer-events: none;
-}
+/* ══════════ SHEETS ══════════ */
+.backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 60; display: flex; align-items: flex-end; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
 .backdrop.open { opacity: 1; pointer-events: all; }
-.sheet {
-  background: #1E1B26;
-  border-radius: 28px 28px 0 0;
-  padding: 20px 20px calc(24px + var(--safe));
-  width: 100%;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-}
+.sheet { background: #111019; border-radius: 28px 28px 0 0; padding: 18px 20px calc(24px + var(--safe)); width: 100%; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); border-top: 1px solid var(--border2); }
 .backdrop.open .sheet { transform: translateY(0); }
-.sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
-.sheet-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 18px; }
+.sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 18px; }
+.sheet-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.3px; }
 .sheet-input {
-  width: 100%; background: var(--surface);
-  border: 1.5px solid var(--border); border-radius: 14px;
-  padding: 16px 18px; font-size: 17px;
-  color: var(--text); font-family: 'Google Sans', sans-serif;
-  outline: none; transition: border-color 0.2s;
-  -webkit-appearance: none;
+  width: 100%; background: var(--surface2);
+  border: 1.5px solid var(--border2); border-radius: 14px;
+  padding: 15px 18px; font-size: 17px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color 0.2s; -webkit-appearance: none;
 }
-.sheet-input:focus { border-color: var(--primary); }
+.sheet-input:focus { border-color: var(--c); }
 .sheet-input::placeholder { color: var(--text-faint); }
-.sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
-.sheet-btn {
-  flex: 1; padding: 16px;
-  border-radius: 100px; border: none;
-  cursor: pointer; font-size: 16px; font-weight: 600;
-  font-family: 'Google Sans', sans-serif;
-  transition: opacity 0.15s, transform 0.1s;
-}
+.sheet-actions { display: flex; gap: 10px; margin-top: 14px; }
+.sheet-btn { flex: 1; padding: 16px; border-radius: 100px; border: none; cursor: pointer; font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s, transform 0.1s; }
 .sheet-btn:active { opacity: 0.8; transform: scale(0.97); }
-.sheet-btn.cancel { background: var(--surface); color: var(--text-dim); }
-.sheet-btn.confirm { background: var(--primary); color: var(--on-primary); }
-.sheet-btn.danger  { background: var(--red);     color: #fff; }
+.sheet-btn.cancel { background: var(--surface2); color: var(--text-dim); }
+.sheet-btn.confirm { background: var(--c); color: #fff; transition: background 0.4s; }
+.sheet-btn.danger  { background: #FF6B8A; color: #fff; }
 .sheet-danger-text { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-bottom: 4px; }
 
-/* ── SNACKBAR ── */
-.snack {
-  position: fixed; bottom: calc(90px + var(--safe)); left: 50%;
-  transform: translateX(-50%) translateY(16px);
-  background: #2C2A36; border: 1px solid var(--border);
-  border-radius: 12px; padding: 13px 20px;
-  font-size: 14px; color: var(--text-dim);
-  white-space: nowrap;
-  opacity: 0; transition: opacity 0.2s, transform 0.2s;
-  pointer-events: none; z-index: 55;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+/* color picker in new counter sheet */
+.color-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.color-swatch {
+  width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent;
+  transition: transform 0.12s, border-color 0.12s;
 }
+.color-swatch:active { transform: scale(0.88); }
+.color-swatch.picked { border-color: var(--text); }
+
+/* ── AD BANNER SPACE ── */
+.ad-banner {
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  margin-bottom: var(--safe);
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* snack */
+.snack { position: fixed; bottom: calc(88px + var(--safe)); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-dim); white-space: nowrap; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 55; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
 .snack.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<!-- ══════════ LIST SCREEN ══════════ -->
+<!-- ══ LIST SCREEN ══ -->
 <div class="screen" id="listScreen">
-  <div class="top-bar">
-    <span class="top-bar-title">Counters</span>
-    <div class="view-toggle">
-      <button class="vtoggle-btn active" id="vList" onclick="setView('list')" title="List view">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      </button>
-      <button class="vtoggle-btn" id="vGrid" onclick="setView('grid')" title="Grid view">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      </button>
+  <div class="list-top">
+    <div class="list-top-title">Count It</div>
+    <div class="list-top-right">
+      <div class="vtoggle">
+        <button class="vbtn on" id="vList" onclick="setView('list')" title="List">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+        </button>
+        <button class="vbtn" id="vGrid" onclick="setView('grid')" title="Grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+      </div>
     </div>
   </div>
+  <div class="total-pill" id="totalPill"></div>
   <div class="list-scroll" id="listScroll"></div>
   <div class="tile-grid" id="tileGrid" style="display:none"></div>
-  <button class="fab" id="fabBtn" onclick="openNewSheet()">
+  <div class="ad-banner">Advertisement</div>
+  <button class="fab" onclick="openNewSheet()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
 
-<!-- ══════════ COUNTER SCREEN ══════════ -->
+<!-- ══ COUNTER SCREEN ══ -->
 <div class="screen off-right" id="counterScreen">
-  <div class="counter-top">
+  <div class="ctr-top">
     <button class="icon-btn" onclick="navBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
     </button>
-    <div class="counter-name-wrap" onclick="openRenameSheet()">
-      <div class="counter-name-text" id="ctrName"></div>
-      <div class="edit-hint">Tap to rename</div>
+    <div class="ctr-name-wrap" onclick="openRenameSheet()">
+      <div class="ctr-name-text" id="ctrName"></div>
+      <div class="ctr-rename-hint">Tap to rename</div>
     </div>
     <button class="icon-btn" onclick="navCal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -693,84 +479,80 @@ html, body {
 
   <div class="tap-zone" id="tapZone">
     <div class="ripple-layer" id="rippleLayer"></div>
-    <div class="count-label">COUNT</div>
-    <div class="count-number" id="ctrNum" onclick="openEditSheet(event)">0</div>
-    <div class="count-edit-hint">Hold number to edit</div>
-    <div class="count-today-label" id="ctrToday">Today: <strong>0</strong></div>
-    <div class="step-indicator" id="stepIndicator">+1 per tap</div>
+    <div class="count-glow" id="ctrGlow"></div>
+    <div class="count-label-txt">COUNT</div>
+    <div class="count-num" id="ctrNum">0</div>
+    <div class="hold-hint">Hold to edit</div>
+    <div class="today-txt" id="ctrToday">Today: <strong>0</strong></div>
+    <div class="step-badge" id="stepBadge">+1 per tap</div>
   </div>
 
   <div class="step-row">
-    <span class="step-label">STEP</span>
+    <span class="step-lbl">STEP</span>
     <div class="step-chips" id="stepChips">
-      <button class="step-chip active" onclick="setStep(1, this)">1</button>
-      <button class="step-chip" onclick="setStep(5, this)">5</button>
-      <button class="step-chip" onclick="setStep(10, this)">10</button>
-      <button class="step-chip" onclick="setStep(25, this)">25</button>
-      <button class="step-chip" onclick="setStep(50, this)">50</button>
-      <button class="step-chip" onclick="setStep(100, this)">100</button>
-      <button class="step-chip" onclick="openCustomStepSheet()">Custom…</button>
+      <button class="step-chip on" onclick="setStep(1,this)">1</button>
+      <button class="step-chip" onclick="setStep(5,this)">5</button>
+      <button class="step-chip" onclick="setStep(10,this)">10</button>
+      <button class="step-chip" onclick="setStep(25,this)">25</button>
+      <button class="step-chip" onclick="setStep(50,this)">50</button>
+      <button class="step-chip" onclick="setStep(100,this)">100</button>
+      <button class="step-chip" id="customChip" onclick="openCustomStepSheet()">Custom…</button>
     </div>
   </div>
 
   <div class="action-bar">
-    <button class="action-btn" onclick="doUndo()">
+    <button class="act-btn" onclick="doUndo()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
       <span>Undo</span>
     </button>
-    <button class="action-btn primary-btn" id="tapBtn" onclick="doTap(event)">
+    <button class="act-btn primary" id="tapBtn" onclick="doTap(event)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span>Count</span>
     </button>
-    <button class="action-btn" onclick="doReset()">
+    <button class="act-btn" onclick="doReset()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
       <span>Reset</span>
     </button>
   </div>
+  <div class="ad-banner">Advertisement</div>
 </div>
 
-<!-- ══════════ CALENDAR SCREEN ══════════ -->
+<!-- ══ CALENDAR SCREEN ══ -->
 <div class="screen off-right" id="calendarScreen">
   <div class="cal-top">
     <button class="icon-btn" onclick="navBack()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
     </button>
     <div class="cal-title-wrap">
-      <div class="cal-counter-name" id="calName"></div>
-      <div class="cal-subtitle">Daily history</div>
+      <div class="cal-ctr-name" id="calName"></div>
+      <div class="cal-sub">Daily history</div>
     </div>
   </div>
-
-  <div class="cal-month-nav">
-    <button class="cal-nav-btn" onclick="shiftMonth(-1)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    </button>
-    <span class="cal-month-label" id="calMonthLabel"></span>
-    <button class="cal-nav-btn" onclick="shiftMonth(1)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-    </button>
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="shiftMonth(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="cal-month" id="calMonth"></span>
+    <button class="cal-nav-btn" onclick="shiftMonth(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
   </div>
-
   <div class="cal-dow">
-    <div class="cal-dow-cell">S</div><div class="cal-dow-cell">M</div>
-    <div class="cal-dow-cell">T</div><div class="cal-dow-cell">W</div>
-    <div class="cal-dow-cell">T</div><div class="cal-dow-cell">F</div>
-    <div class="cal-dow-cell">S</div>
+    <div class="dow-cell">S</div><div class="dow-cell">M</div><div class="dow-cell">T</div>
+    <div class="dow-cell">W</div><div class="dow-cell">T</div><div class="dow-cell">F</div><div class="dow-cell">S</div>
   </div>
   <div class="cal-grid" id="calGrid"></div>
-  <div class="cal-day-card" id="calDayCard"></div>
+  <div class="day-card" id="dayCard"></div>
   <div class="cal-stats" id="calStats"></div>
+  <div class="ad-banner">Advertisement</div>
 </div>
 
-<!-- ══ MODALS ══ -->
+<!-- ══ SHEETS ══ -->
 <div class="backdrop" id="newSheet" onclick="closeSheet('newSheet',event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">New Counter</div>
-    <input class="sheet-input" id="newInput" placeholder="e.g. Water intake, Push-ups…" autocomplete="off">
+    <div class="color-row" id="colorRow"></div>
+    <input class="sheet-input" id="newInput" placeholder="e.g. Water, Push-ups, Steps…" autocomplete="off">
     <div class="sheet-actions">
       <button class="sheet-btn cancel" onclick="closeSheet('newSheet')">Cancel</button>
-      <button class="sheet-btn confirm" onclick="createCounter()">Create</button>
+      <button class="sheet-btn confirm" id="newConfirmBtn" onclick="createCounter()">Create</button>
     </div>
   </div>
 </div>
@@ -791,10 +573,10 @@ html, body {
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Edit Count</div>
-    <input class="sheet-input" id="editCountInput" placeholder="Enter new count" type="number" inputmode="numeric" autocomplete="off">
+    <input class="sheet-input" id="editInput" placeholder="Enter value" type="number" inputmode="numeric" autocomplete="off">
     <div class="sheet-actions">
       <button class="sheet-btn cancel" onclick="closeSheet('editCountSheet')">Cancel</button>
-      <button class="sheet-btn confirm" onclick="saveEditCount()">Set</button>
+      <button class="sheet-btn confirm" onclick="saveEdit()">Set</button>
     </div>
   </div>
 </div>
@@ -814,8 +596,8 @@ html, body {
 <div class="backdrop" id="deleteSheet" onclick="closeSheet('deleteSheet',event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title" id="deleteSheetTitle">Delete counter?</div>
-    <div class="sheet-danger-text">All history for this counter will be permanently removed.</div>
+    <div class="sheet-title" id="delTitle">Delete counter?</div>
+    <div class="sheet-danger-text">All history will be permanently removed.</div>
     <div class="sheet-actions">
       <button class="sheet-btn cancel" onclick="closeSheet('deleteSheet')">Cancel</button>
       <button class="sheet-btn danger" onclick="confirmDelete()">Delete</button>
@@ -826,70 +608,77 @@ html, body {
 <div class="snack" id="snack"></div>
 
 <script>
-// ── VIEW MODE ──
-let viewMode = localStorage.getItem('viewMode') || 'list';
-let currentStep = 1;
-
-function setView(mode) {
-  viewMode = mode;
-  localStorage.setItem('viewMode', mode);
-  document.getElementById('vList').classList.toggle('active', mode === 'list');
-  document.getElementById('vGrid').classList.toggle('active', mode === 'grid');
-  document.getElementById('listScroll').style.display = mode === 'list' ? 'flex' : 'none';
-  document.getElementById('tileGrid').style.display  = mode === 'grid' ? 'grid' : 'none';
-  if (mode === 'list') renderList();
-  else renderTiles();
-}
+// ── COLORS ──
+const PALETTE = [
+  { hex: '#7C6FCD', bg: '#0E0D18', bright: '#A99EE8', r: '124,111,205' },
+  { hex: '#E8587A', bg: '#160C10', bright: '#F28FA5', r: '232,88,122'  },
+  { hex: '#3EA8A0', bg: '#08100F', bright: '#6DCCC5', r: '62,168,160'  },
+  { hex: '#E8905A', bg: '#150D07', bright: '#F2B48A', r: '232,144,90'  },
+  { hex: '#5A9FE8', bg: '#080F16', bright: '#8AC3F2', r: '90,159,232'  },
+  { hex: '#B85AE8', bg: '#110815', bright: '#D48AF2', r: '184,90,232'  },
+  { hex: '#5AE87C', bg: '#08150D', bright: '#8AF29E', r: '90,232,124'  },
+  { hex: '#E8D45A', bg: '#151208', bright: '#F2E48A', r: '232,212,90'  },
+];
 
 // ── DATA ──
-const STORE = 'ctrs_v3';
-function load() { try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch { return []; } }
-function save() { localStorage.setItem(STORE, JSON.stringify(db)); }
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
+const KEY = 'countit_v1';
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
+function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
+function todayKey() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function pad(n) { return String(n).padStart(2,'0'); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 let db = load();
 if (!db.length) {
-  db = [{ id: Date.now(), name: 'My Counter', total: 0, days: {}, hist: [] }];
+  db = [{ id: Date.now(), name: 'My Counter', total: 0, days: {}, hist: [], colorIdx: 0 }];
   save();
 }
 
 let activeId = null;
+let currentStep = 1;
+let viewMode = localStorage.getItem('vm') || 'list';
 let calDate = new Date();
 let calSel = null;
 let pendingDel = null;
+let pickedColor = 0;
 let snackTid;
 
-// ── NAVIGATION ──
-let screenStack = ['listScreen'];
-
-function navTo(id) {
-  const cur = screenStack[screenStack.length - 1];
-  document.getElementById(cur).classList.add('off-left');
-  document.getElementById(cur).classList.remove('off-right');
-  document.getElementById(id).classList.remove('off-right', 'off-left');
-  screenStack.push(id);
+// ── COLOR UTILS ──
+function getColor(idx) { return PALETTE[idx % PALETTE.length]; }
+function applyColor(idx) {
+  const col = getColor(idx);
+  const r = document.documentElement;
+  r.style.setProperty('--c', col.hex);
+  r.style.setProperty('--c-bright', col.bright);
+  r.style.setProperty('--c-dim', `rgba(${col.r},0.15)`);
+  r.style.setProperty('--c-glow', `rgba(${col.r},0.22)`);
+  r.style.setProperty('--c-bg', col.bg);
+  r.style.setProperty('--cr', col.r);
+  document.getElementById('counterScreen').style.background = col.bg;
 }
 
+// ── NAVIGATION ──
+let stack = ['listScreen'];
+function navTo(id) {
+  const cur = stack[stack.length-1];
+  document.getElementById(cur).classList.add('off-left');
+  document.getElementById(id).classList.remove('off-right','off-left');
+  stack.push(id);
+}
 function navBack() {
-  if (screenStack.length <= 1) return;
-  const cur = screenStack.pop();
+  if (stack.length <= 1) return;
+  const cur = stack.pop();
   document.getElementById(cur).classList.add('off-right');
   document.getElementById(cur).classList.remove('off-left');
-  const prev = screenStack[screenStack.length - 1];
-  document.getElementById(prev).classList.remove('off-left', 'off-right');
-  if (prev === 'listScreen') { if (viewMode === 'list') renderList(); else renderTiles(); }
-  if (prev === 'counterScreen') refreshCounter();
+  const prev = stack[stack.length-1];
+  document.getElementById(prev).classList.remove('off-left','off-right');
+  if (prev === 'listScreen') renderAll();
+  if (prev === 'counterScreen') refreshCtr();
 }
-
 function navCal() {
   const c = getC(activeId);
   document.getElementById('calName').textContent = c.name;
-  calDate = new Date();
-  calSel = todayKey();
+  calDate = new Date(); calSel = todayKey();
   renderCal();
   navTo('calendarScreen');
 }
@@ -897,454 +686,356 @@ function navCal() {
 // ── UTILS ──
 function getC(id) { return db.find(c => c.id === id); }
 function todayOf(c) { return c.days[todayKey()] || 0; }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
 function snack(msg) {
   const el = document.getElementById('snack');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   clearTimeout(snackTid);
   snackTid = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ── TILE RENDER ──
-function renderTiles() {
-  const el = document.getElementById('tileGrid');
-  if (!db.length) {
-    el.style.display = 'flex';
-    el.style.flexDirection = 'column';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.innerHTML = `<div class="empty-state" style="padding-bottom:100px">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <p>Tap + to add a counter</p></div>`;
-    return;
-  }
-  el.style.display = 'grid';
-  el.style.flexDirection = '';
-  el.innerHTML = db.map(c => {
-    const today = todayOf(c);
-    return `<div class="counter-tile" onclick="openCounter(${c.id})">
-      <div class="tile-name">${esc(c.name)}</div>
-      <div class="tile-count">${c.total.toLocaleString()}</div>
-      ${today > 0 ? `<div class="tile-today">Today: <strong>${today}</strong></div>` : '<div class="tile-today">&nbsp;</div>'}
-      <div class="tile-actions">
-        <button class="tile-btn minus" onclick="event.stopPropagation();tileDecrement(${c.id},this)">−</button>
-        <button class="tile-btn plus"  onclick="event.stopPropagation();tileIncrement(${c.id},this)">+</button>
-      </div>
-    </div>`;
-  }).join('');
+// ── VIEW ──
+function setView(mode) {
+  viewMode = mode;
+  localStorage.setItem('vm', mode);
+  document.getElementById('vList').classList.toggle('on', mode === 'list');
+  document.getElementById('vGrid').classList.toggle('on', mode === 'grid');
+  document.getElementById('listScroll').style.display = mode === 'list' ? 'flex' : 'none';
+  document.getElementById('tileGrid').style.display   = mode === 'grid' ? 'grid' : 'none';
+  renderAll();
 }
 
-function tileIncrement(id, btn) {
-  activeId = id;
-  const c = getC(id);
-  c.hist.push(c.total);
-  if (c.hist.length > 200) c.hist.shift();
-  c.total++;
-  c.days[todayKey()] = (c.days[todayKey()]||0) + 1;
-  save();
-  // animate the count in the tile
-  const tile = btn.closest('.counter-tile');
-  const countEl = tile.querySelector('.tile-count');
-  countEl.textContent = c.total.toLocaleString();
-  countEl.style.color = 'var(--primary)';
-  setTimeout(() => countEl.style.color = '', 200);
-  const todayEl = tile.querySelector('.tile-today');
-  const t = todayOf(c);
-  todayEl.innerHTML = `Today: <strong>${t}</strong>`;
+function renderAll() {
+  renderTotalPill();
+  if (viewMode === 'list') renderList();
+  else renderTiles();
 }
 
-function tileDecrement(id, btn) {
-  activeId = id;
-  const c = getC(id);
-  c.hist.push(c.total);
-  if (c.hist.length > 200) c.hist.shift();
-  c.total--;
-  const tk = todayKey();
-  c.days[tk] = Math.max(0, (c.days[tk]||0) - 1);
-  if (!c.days[tk]) delete c.days[tk];
-  save();
-  const tile = btn.closest('.counter-tile');
-  const countEl = tile.querySelector('.tile-count');
-  countEl.textContent = c.total.toLocaleString();
-  countEl.style.color = 'var(--red)';
-  setTimeout(() => countEl.style.color = '', 200);
-  const todayEl = tile.querySelector('.tile-today');
-  const t = todayOf(c);
-  todayEl.innerHTML = t > 0 ? `Today: <strong>${t}</strong>` : '&nbsp;';
+function renderTotalPill() {
+  const total = db.reduce((a,c) => a + c.total, 0);
+  const today = db.reduce((a,c) => a + todayOf(c), 0);
+  document.getElementById('totalPill').innerHTML =
+    `<span class="total-pill-label">All counters</span>
+     <span class="total-pill-val">${total.toLocaleString()} total · ${today} today</span>`;
 }
 
-// ── LIST RENDER ──
+// ── LIST ──
 function renderList() {
   const el = document.getElementById('listScroll');
-  if (!db.length) {
-    el.innerHTML = `<div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <p>Tap + to add a counter</p></div>`;
-    return;
-  }
+  if (!db.length) { el.innerHTML = emptyHTML(); return; }
   el.innerHTML = db.map(c => {
+    const col = getColor(c.colorIdx || 0);
     const today = todayOf(c);
-    return `<div class="counter-row" onclick="openCounter(${c.id})">
-      <div class="row-info">
-        <div class="row-name">${esc(c.name)}</div>
-        <div class="row-meta">
+    return `<div class="ctr-row" onclick="openCounter(${c.id})"
+      style="--c:${col.hex};--c-bright:${col.bright};--c-dim:rgba(${col.r},0.15)">
+      <div class="ctr-row-info">
+        <div class="ctr-row-name">${esc(c.name)}</div>
+        <div class="ctr-row-meta">
           <span>All time: ${c.total.toLocaleString()}</span>
-          ${today > 0 ? `<span class="today-pill">Today: ${today}</span>` : ''}
+          ${today > 0 ? `<span class="today-tag">Today: ${today}</span>` : ''}
         </div>
       </div>
-      <div class="row-total">${c.total.toLocaleString()}</div>
-      <button class="row-delete" onclick="event.stopPropagation();promptDelete(${c.id})">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      <div class="ctr-row-count">${c.total.toLocaleString()}</div>
+      <button class="ctr-row-del" onclick="event.stopPropagation();promptDel(${c.id})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
       </button>
     </div>`;
   }).join('');
 }
 
+// ── TILES ──
+function renderTiles() {
+  const el = document.getElementById('tileGrid');
+  if (!db.length) { el.innerHTML = emptyHTML(); el.style.display='flex'; el.style.flexDirection='column'; el.style.alignItems='center'; el.style.justifyContent='center'; return; }
+  el.style.display='grid'; el.style.flexDirection='';
+  el.innerHTML = db.map(c => {
+    const col = getColor(c.colorIdx || 0);
+    const today = todayOf(c);
+    return `<div class="ctr-tile" onclick="openCounter(${c.id})"
+      style="--c:${col.hex};--c-bright:${col.bright};--c-dim:rgba(${col.r},0.15);--c-glow:rgba(${col.r},0.2)">
+      <div class="tile-name">${esc(c.name)}</div>
+      <div class="tile-num" id="tn-${c.id}">${c.total.toLocaleString()}</div>
+      <div class="tile-today" id="tt-${c.id}">${today > 0 ? `Today: <strong>${today}</strong>` : '&nbsp;'}</div>
+      <div class="tile-btns">
+        <button class="tile-btn tm" onclick="event.stopPropagation();tileDec(${c.id})">−</button>
+        <button class="tile-btn tp" onclick="event.stopPropagation();tileInc(${c.id})">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function tileInc(id) {
+  const c = getC(id); c.hist.push(c.total); c.total++; c.days[todayKey()]=(c.days[todayKey()]||0)+1; save();
+  const col = getColor(c.colorIdx||0);
+  const el = document.getElementById(`tn-${id}`); el.textContent = c.total.toLocaleString(); el.style.color='#fff'; setTimeout(()=>el.style.color='',180);
+  const te = document.getElementById(`tt-${id}`); const t=todayOf(c); te.innerHTML = t>0?`Today: <strong>${t}</strong>`:'&nbsp;';
+  renderTotalPill();
+}
+function tileDec(id) {
+  const c = getC(id); c.hist.push(c.total); c.total--; const tk=todayKey(); c.days[tk]=Math.max(0,(c.days[tk]||0)-1); if(!c.days[tk])delete c.days[tk]; save();
+  const el = document.getElementById(`tn-${id}`); el.textContent = c.total.toLocaleString(); el.style.color='#FF6B8A'; setTimeout(()=>el.style.color='',180);
+  const te = document.getElementById(`tt-${id}`); const t=todayOf(c); te.innerHTML = t>0?`Today: <strong>${t}</strong>`:'&nbsp;';
+  renderTotalPill();
+}
+
+function emptyHTML() { return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>Tap + to add a counter</p></div>`; }
+
 // ── OPEN COUNTER ──
 function openCounter(id) {
   activeId = id;
   currentStep = 1;
-  // reset step chips UI
-  document.querySelectorAll('.step-chip').forEach((c,i) => {
-    c.classList.remove('active');
-    if (i === 0) c.classList.add('active');
-  });
-  // reset custom chip label
-  const chips = document.querySelectorAll('.step-chip');
-  chips[chips.length-1].textContent = 'Custom…';
-  chips[chips.length-1].onclick = () => openCustomStepSheet();
-  document.getElementById('stepIndicator').textContent = '+1 per tap';
-  refreshCounter();
+  document.querySelectorAll('.step-chip').forEach((c,i) => { c.classList.toggle('on', i===0); });
+  document.getElementById('customChip').textContent = 'Custom…';
+  document.getElementById('customChip').onclick = openCustomStepSheet;
+  document.getElementById('stepBadge').textContent = '+1 per tap';
+  const c = getC(id);
+  applyColor(c.colorIdx || 0);
+  refreshCtr();
   navTo('counterScreen');
   setupTap();
 }
 
-function refreshCounter() {
-  const c = getC(activeId);
-  if (!c) return;
+function refreshCtr() {
+  const c = getC(activeId); if (!c) return;
   document.getElementById('ctrName').textContent = c.name;
-  document.getElementById('ctrNum').textContent = c.total.toLocaleString();
-  document.getElementById('ctrNum').classList.toggle('negative', c.total < 0);
+  const el = document.getElementById('ctrNum');
+  el.textContent = c.total.toLocaleString();
+  el.classList.toggle('neg', c.total < 0);
   document.getElementById('ctrToday').innerHTML = `Today: <strong>${todayOf(c)}</strong>`;
-}
-
-// ── STEP ──
-function setStep(n, btn) {
-  currentStep = n;
-  document.querySelectorAll('.step-chip').forEach(c => c.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  document.getElementById('stepIndicator').textContent = `+${n} per tap`;
-}
-
-function openCustomStepSheet() {
-  document.getElementById('customStepInput').value = '';
-  document.getElementById('customStepSheet').classList.add('open');
-  setTimeout(() => document.getElementById('customStepInput').focus(), 350);
-}
-
-function saveCustomStep() {
-  const val = parseInt(document.getElementById('customStepInput').value);
-  if (!val || val < 1) { snack('Enter a valid number'); return; }
-  currentStep = val;
-  // deselect all chips, mark custom
-  document.querySelectorAll('.step-chip').forEach(c => c.classList.remove('active'));
-  const last = document.querySelector('.step-chip:last-child');
-  last.textContent = val;
-  last.classList.add('active');
-  last.onclick = () => setStep(val, last);
-  document.getElementById('stepIndicator').textContent = `+${val} per tap`;
-  closeSheet('customStepSheet');
-}
-
-// ── EDIT COUNT ──
-function openEditSheet(e) {
-  if (e) { e.stopPropagation(); e.preventDefault(); }
-  const c = getC(activeId);
-  document.getElementById('editCountInput').value = c.total;
-  document.getElementById('editCountSheet').classList.add('open');
-  setTimeout(() => {
-    const inp = document.getElementById('editCountInput');
-    inp.focus();
-    inp.select();
-  }, 350);
-}
-
-function saveEditCount() {
-  const val = parseInt(document.getElementById('editCountInput').value);
-  if (isNaN(val)) { snack('Enter a valid number'); return; }
-  const c = getC(activeId);
-  c.hist.push(c.total);
-  c.total = val;
-  // update today's count to reflect edit (set to val if editing makes sense)
-  save();
-  refreshCounter();
-  pop();
-  closeSheet('editCountSheet');
-  snack(`Count set to ${val.toLocaleString()}`);
 }
 
 // ── TAP ──
 function setupTap() {
   const zone = document.getElementById('tapZone');
   const numEl = document.getElementById('ctrNum');
+  let pressTimer = null, didLong = false;
 
-  // Long press on number = edit, short tap = increment
-  let pressTimer = null;
-  let didLongPress = false;
-
-  numEl.addEventListener('touchstart', e => {
-    didLongPress = false;
+  numEl.ontouchstart = e => {
+    didLong = false;
     pressTimer = setTimeout(() => {
-      didLongPress = true;
-      openEditSheet(e);
-      // haptic feedback if available
+      didLong = true;
       if (navigator.vibrate) navigator.vibrate(40);
-    }, 500);
-  }, { passive: true });
-
-  numEl.addEventListener('touchend', e => {
+      openEditSheet();
+    }, 480);
+  };
+  numEl.ontouchend = e => {
     clearTimeout(pressTimer);
-    if (!didLongPress) {
-      // short tap = just increment like rest of zone
-      e.preventDefault();
-      e.stopPropagation();
-      const t = e.changedTouches[0];
-      handleTap({ clientX: t.clientX, clientY: t.clientY, changedTouches: e.changedTouches });
-    }
-  });
+    if (!didLong) { e.preventDefault(); e.stopPropagation(); const t=e.changedTouches[0]; doIncrement(t.clientX, t.clientY); }
+  };
+  numEl.ontouchmove = () => clearTimeout(pressTimer);
+  numEl.onmousedown = () => { didLong=false; pressTimer=setTimeout(()=>{didLong=true;openEditSheet();},480); };
+  numEl.onmouseup = () => clearTimeout(pressTimer);
+  numEl.onclick = e => { if(didLong) e.stopPropagation(); };
 
-  numEl.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
-
-  // also support mouse long press on desktop
-  numEl.addEventListener('mousedown', () => {
-    didLongPress = false;
-    pressTimer = setTimeout(() => { didLongPress = true; openEditSheet(); }, 500);
-  });
-  numEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
-  numEl.onclick = e => { if (didLongPress) { e.stopPropagation(); } };
-
-  // rest of tap zone = increment normally
-  zone.onclick = e => { if (e.target === numEl || e.target.closest && e.target.closest('#ctrNum')) return; if (!e.target.closest('button')) handleTap(e); };
-  zone.ontouchend = e => { if (e.target === numEl || (e.target.closest && e.target.closest('#ctrNum'))) return; e.preventDefault(); if (!e.target.closest('button')) handleTap(e); };
+  zone.onclick = e => { if(e.target===numEl||e.target.closest&&e.target.closest('#ctrNum')) return; if(!e.target.closest('button')) doIncrement(e.clientX,e.clientY); };
+  zone.ontouchend = e => { if(e.target===numEl||(e.target.closest&&e.target.closest('#ctrNum'))) return; e.preventDefault(); if(!e.target.closest('button')){ const t=e.changedTouches[0]; doIncrement(t.clientX,t.clientY); }};
 }
 
-function handleTap(e) {
-  const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-  const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-  increment(x, y);
-}
+function doTap(e) { const r=e.currentTarget.getBoundingClientRect(); doIncrement(r.left+r.width/2, r.top+r.height/2); }
 
-function doTap(e) {
-  const r = e.currentTarget.getBoundingClientRect();
-  increment(r.left + r.width/2, r.top + r.height/2);
-}
-
-function increment(x, y) {
+function doIncrement(x, y) {
   const c = getC(activeId);
-  c.hist.push(c.total);
-  if (c.hist.length > 200) c.hist.shift();
+  c.hist.push(c.total); if(c.hist.length>200) c.hist.shift();
   c.total += currentStep;
-  c.days[todayKey()] = (c.days[todayKey()] || 0) + currentStep;
-  save();
-  refreshCounter();
-  pop();
-  spawnRipple(x, y);
-  spawnFly(x, y, currentStep);
+  c.days[todayKey()] = (c.days[todayKey()]||0) + currentStep;
+  save(); refreshCtr(); popNum(); spawnRipple(x,y); spawnFly(x,y,currentStep);
 }
 
 function doUndo() {
   const c = getC(activeId);
   if (!c.hist.length) { snack('Nothing to undo'); return; }
-  const prev = c.hist.pop();
-  const diff = c.total - prev;
-  c.total = prev;
-  const tk = todayKey();
-  c.days[tk] = Math.max(0, (c.days[tk]||0) - diff);
-  if (!c.days[tk]) delete c.days[tk];
-  save(); refreshCounter(); pop();
+  const prev = c.hist.pop(); const diff = c.total - prev;
+  c.total = prev; const tk=todayKey();
+  c.days[tk] = Math.max(0,(c.days[tk]||0)-diff);
+  if(!c.days[tk]) delete c.days[tk];
+  save(); refreshCtr(); popNum();
 }
 
 function doReset() {
   const c = getC(activeId);
-  if (c.total === 0) { snack('Already at 0'); return; }
-  c.hist = [];
-  const tk = todayKey();
-  delete c.days[tk];
-  c.total = 0;
-  save(); refreshCounter(); pop();
-  snack('Counter reset');
+  if (c.total===0) { snack('Already at 0'); return; }
+  c.hist=[]; delete c.days[todayKey()]; c.total=0;
+  save(); refreshCtr(); popNum(); snack('Counter reset');
 }
 
-function pop() {
-  const el = document.getElementById('ctrNum');
-  el.classList.remove('pop');
-  void el.offsetWidth;
-  el.classList.add('pop');
+function popNum() {
+  const el=document.getElementById('ctrNum');
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
 }
 
-function spawnRipple(x, y) {
-  const layer = document.getElementById('rippleLayer');
-  const size = Math.max(window.innerWidth, window.innerHeight) * 2.4;
-  const r = document.createElement('div');
-  r.className = 'ripple';
-  r.style.cssText = `width:${size}px;height:${size}px;left:${x-size/2}px;top:${y-size/2}px`;
-  layer.appendChild(r);
-  r.addEventListener('animationend', () => r.remove());
+function spawnRipple(x,y) {
+  const l=document.getElementById('rippleLayer');
+  const s=Math.max(window.innerWidth,window.innerHeight)*2.4;
+  const r=document.createElement('div'); r.className='ripple';
+  r.style.cssText=`width:${s}px;height:${s}px;left:${x-s/2}px;top:${y-s/2}px`;
+  l.appendChild(r); r.addEventListener('animationend',()=>r.remove());
 }
 
-function spawnFly(x, y, step = 1) {
-  const el = document.createElement('div');
-  el.className = 'fly';
-  el.textContent = `+${step}`;
-  el.style.left = (x - 18) + 'px';
-  el.style.top  = (y - 18) + 'px';
-  document.body.appendChild(el);
-  el.addEventListener('animationend', () => el.remove());
+function spawnFly(x,y,step=1) {
+  const el=document.createElement('div'); el.className='fly';
+  el.textContent=`+${step}`; el.style.left=(x-18)+'px'; el.style.top=(y-18)+'px';
+  document.body.appendChild(el); el.addEventListener('animationend',()=>el.remove());
+}
+
+// ── STEP ──
+function setStep(n, btn) {
+  currentStep = n;
+  document.querySelectorAll('.step-chip').forEach(c=>c.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  document.getElementById('stepBadge').textContent = `+${n} per tap`;
+}
+
+function openCustomStepSheet() {
+  document.getElementById('customStepInput').value='';
+  document.getElementById('customStepSheet').classList.add('open');
+  setTimeout(()=>document.getElementById('customStepInput').focus(),350);
+}
+
+function saveCustomStep() {
+  const v=parseInt(document.getElementById('customStepInput').value);
+  if(!v||v<1){snack('Enter a valid number');return;}
+  currentStep=v;
+  document.querySelectorAll('.step-chip').forEach(c=>c.classList.remove('on'));
+  const cc=document.getElementById('customChip');
+  cc.textContent=v; cc.classList.add('on'); cc.onclick=()=>setStep(v,cc);
+  document.getElementById('stepBadge').textContent=`+${v} per tap`;
+  closeSheet('customStepSheet');
+}
+
+// ── EDIT COUNT ──
+function openEditSheet() {
+  document.getElementById('editInput').value=getC(activeId).total;
+  document.getElementById('editCountSheet').classList.add('open');
+  setTimeout(()=>{const i=document.getElementById('editInput');i.focus();i.select();},350);
+}
+
+function saveEdit() {
+  const v=parseInt(document.getElementById('editInput').value);
+  if(isNaN(v)){snack('Enter a valid number');return;}
+  const c=getC(activeId);
+  c.hist.push(c.total);
+  // Update today's day count: replace it with the new total
+  // so the calendar reflects the manually set value
+  c.days[todayKey()] = Math.max(0, v);
+  c.total=v;
+  save(); refreshCtr(); popNum();
+  closeSheet('editCountSheet'); snack(`Count set to ${v.toLocaleString()}`);
 }
 
 // ── CALENDAR ──
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-function shiftMonth(d) { calDate.setMonth(calDate.getMonth()+d); renderCal(); }
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function shiftMonth(d){calDate.setMonth(calDate.getMonth()+d);renderCal();}
 
 function renderCal() {
-  const c = getC(activeId);
-  const yr = calDate.getFullYear(), mo = calDate.getMonth();
-  document.getElementById('calMonthLabel').textContent = `${MONTHS[mo]} ${yr}`;
-
-  const first = new Date(yr, mo, 1).getDay();
-  const days  = new Date(yr, mo+1, 0).getDate();
-  const today = todayKey();
-
-  let maxCnt = 0;
-  for (let i = 1; i <= days; i++) {
-    const k = `${yr}-${pad(mo+1)}-${pad(i)}`;
-    maxCnt = Math.max(maxCnt, c.days[k]||0);
-  }
-
-  let html = '';
-  for (let i = 0; i < first; i++) html += `<div class="cal-cell empty"></div>`;
-  for (let i = 1; i <= days; i++) {
-    const k = `${yr}-${pad(mo+1)}-${pad(i)}`;
-    const cnt = c.days[k]||0;
-    const cls = [
-      'cal-cell',
-      cnt > 0 ? 'has-count' : '',
-      k === today ? 'is-today' : '',
-      k === calSel ? 'selected' : '',
-      cnt > 0 && maxCnt > 0 && cnt >= maxCnt * 0.7 ? 'heat-high' : cnt > 0 && maxCnt > 0 && cnt >= maxCnt * 0.35 ? 'heat-mid' : ''
-    ].filter(Boolean).join(' ');
-    html += `<div class="${cls}" onclick="selectDay('${k}',${cnt})">
-      <div class="cal-cell-date">${i}</div>
-      ${cnt > 0 ? `<div class="cal-cell-count">${cnt}</div>` : ''}
+  const c=getC(activeId);
+  const yr=calDate.getFullYear(), mo=calDate.getMonth();
+  document.getElementById('calMonth').textContent=`${MONTHS[mo]} ${yr}`;
+  const first=new Date(yr,mo,1).getDay(), days=new Date(yr,mo+1,0).getDate();
+  const today=todayKey();
+  let mx=0;
+  for(let i=1;i<=days;i++){const k=`${yr}-${pad(mo+1)}-${pad(i)}`;mx=Math.max(mx,c.days[k]||0);}
+  let html='';
+  for(let i=0;i<first;i++) html+=`<div class="cal-cell mt0"></div>`;
+  for(let i=1;i<=days;i++){
+    const k=`${yr}-${pad(mo+1)}-${pad(i)}`;
+    const cnt=c.days[k]||0;
+    const heat=cnt>0&&mx>0?(cnt>=mx*0.7?'heat3':cnt>=mx*0.35?'heat2':'heat1'):'';
+    const cls=['cal-cell',cnt>0?'has-data':'',k===today?'is-today':'',k===calSel?'sel':'',heat].filter(Boolean).join(' ');
+    html+=`<div class="${cls}" onclick="selDay('${k}')">
+      <div class="cell-date">${i}</div>
+      ${cnt>0?`<div class="cell-cnt">${cnt}</div>`:''}
     </div>`;
   }
-  document.getElementById('calGrid').innerHTML = html;
-  renderDayCard(calSel);
-  renderStats();
+  document.getElementById('calGrid').innerHTML=html;
+  renderDayCard(); renderCalStats();
 }
 
-function selectDay(k, cnt) {
-  calSel = k;
-  renderCal();
+function selDay(k){calSel=k;renderCal();}
+
+function renderDayCard(){
+  const c=getC(activeId); const cnt=calSel?(c.days[calSel]||0):0;
+  const card=document.getElementById('dayCard');
+  if(!calSel){card.innerHTML=`<div class="day-card-empty">Select a day</div>`;return;}
+  const[yr,mo,dy]=calSel.split('-').map(Number);
+  const lbl=new Date(yr,mo-1,dy).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  card.innerHTML=`<div class="day-card-info"><div class="day-card-date">${lbl}</div><div class="day-card-num">${cnt}</div><div class="day-card-lbl">${cnt===1?'count':'counts'}</div></div>`;
 }
 
-function renderDayCard(k) {
-  const c = getC(activeId);
-  const cnt = k ? (c.days[k]||0) : 0;
-  const card = document.getElementById('calDayCard');
-  if (!k) { card.innerHTML = `<div class="cal-day-empty">Select a day</div>`; return; }
-  const [yr,mo,dy] = k.split('-').map(Number);
-  const label = new Date(yr,mo-1,dy).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  card.innerHTML = `<div class="cal-day-card-info">
-    <div class="cal-day-card-date">${label}</div>
-    <div class="cal-day-card-count">${cnt}</div>
-    <div class="cal-day-card-label">${cnt===1?'count':'counts'}</div>
-  </div>`;
+function renderCalStats(){
+  const c=getC(activeId);
+  const vals=Object.values(c.days).filter(v=>v>0);
+  const avg=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+  const best=vals.length?Math.max(...vals):0;
+  const streak=calcStreak(c);
+  document.getElementById('calStats').innerHTML=`
+    <div class="stat"><div class="stat-lbl">Daily Avg</div><div class="stat-val">${avg}</div><div class="stat-sub">active days</div></div>
+    <div class="stat"><div class="stat-lbl">Best Day</div><div class="stat-val">${best}</div><div class="stat-sub">single day</div></div>
+    <div class="stat"><div class="stat-lbl">Streak</div><div class="stat-val">${streak}d</div><div class="stat-sub">in a row</div></div>
+    <div class="stat"><div class="stat-lbl">All Time</div><div class="stat-val">${c.total.toLocaleString()}</div><div class="stat-sub">total</div></div>`;
 }
 
-function renderStats() {
-  const c = getC(activeId);
-  const vals = Object.values(c.days).filter(v=>v>0);
-  const avg  = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
-  const best = vals.length ? Math.max(...vals) : 0;
-  const streak = calcStreak(c);
-  document.getElementById('calStats').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Daily Avg</div><div class="stat-val">${avg}</div><div class="stat-sub">active days only</div></div>
-    <div class="stat-card"><div class="stat-label">Best Day</div><div class="stat-val">${best}</div><div class="stat-sub">single day</div></div>
-    <div class="stat-card"><div class="stat-label">Streak</div><div class="stat-val">${streak}d</div><div class="stat-sub">days in a row</div></div>
-    <div class="stat-card"><div class="stat-label">All Time</div><div class="stat-val">${c.total.toLocaleString()}</div><div class="stat-sub">total counts</div></div>
-  `;
-}
-
-function calcStreak(c) {
-  let s = 0, d = new Date();
-  while (true) {
-    const k = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    if ((c.days[k]||0) > 0) { s++; d.setDate(d.getDate()-1); } else break;
-  }
-  return s;
-}
+function calcStreak(c){let s=0,d=new Date();while(true){const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;if((c.days[k]||0)>0){s++;d.setDate(d.getDate()-1);}else break;}return s;}
 
 // ── SHEETS ──
-function openNewSheet() {
-  document.getElementById('newInput').value = '';
+function buildColorRow(){
+  const el=document.getElementById('colorRow');
+  el.innerHTML=PALETTE.map((col,i)=>`<div class="color-swatch${i===pickedColor?' picked':''}" style="background:${col.hex}" onclick="pickColor(${i})"></div>`).join('');
+  document.getElementById('newConfirmBtn').style.background=PALETTE[pickedColor].hex;
+}
+
+function pickColor(i){
+  pickedColor=i;
+  document.querySelectorAll('.color-swatch').forEach((s,j)=>s.classList.toggle('picked',j===i));
+  document.getElementById('newConfirmBtn').style.background=PALETTE[i].hex;
+}
+
+function openNewSheet(){
+  pickedColor=db.length % PALETTE.length;
+  buildColorRow();
+  document.getElementById('newInput').value='';
   document.getElementById('newSheet').classList.add('open');
-  setTimeout(() => document.getElementById('newInput').focus(), 350);
+  setTimeout(()=>document.getElementById('newInput').focus(),350);
 }
 
-function openRenameSheet() {
-  document.getElementById('renameInput').value = getC(activeId).name;
+function openRenameSheet(){
+  document.getElementById('renameInput').value=getC(activeId).name;
   document.getElementById('renameSheet').classList.add('open');
-  setTimeout(() => document.getElementById('renameInput').focus(), 350);
+  setTimeout(()=>document.getElementById('renameInput').focus(),350);
 }
 
-function promptDelete(id) {
-  pendingDel = id;
-  document.getElementById('deleteSheetTitle').textContent = `Delete "${getC(id).name}"?`;
+function promptDel(id){
+  pendingDel=id;
+  document.getElementById('delTitle').textContent=`Delete "${getC(id).name}"?`;
   document.getElementById('deleteSheet').classList.add('open');
 }
 
-function closeSheet(id, e) {
-  if (e && e.target !== document.getElementById(id)) return;
-  document.getElementById(id).classList.remove('open');
+function closeSheet(id,e){if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('open');}
+
+function createCounter(){
+  const name=document.getElementById('newInput').value.trim()||'Counter';
+  db.push({id:Date.now(),name,total:0,days:{},hist:[],colorIdx:pickedColor});
+  save(); closeSheet('newSheet'); renderAll();
 }
 
-function createCounter() {
-  const name = document.getElementById('newInput').value.trim() || 'Counter';
-  db.push({ id: Date.now(), name, total: 0, days: {}, hist: [] });
-  save();
-  document.getElementById('newSheet').classList.remove('open');
-  renderList();
+function saveRename(){
+  const name=document.getElementById('renameInput').value.trim(); if(!name) return;
+  getC(activeId).name=name; save(); refreshCtr();
+  closeSheet('renameSheet');
 }
 
-function saveRename() {
-  const name = document.getElementById('renameInput').value.trim();
-  if (!name) return;
-  getC(activeId).name = name;
-  save();
-  document.getElementById('renameSheet').classList.remove('open');
-  refreshCounter();
+function confirmDelete(){
+  db=db.filter(c=>c.id!==pendingDel); save();
+  closeSheet('deleteSheet'); renderAll();
 }
 
-function confirmDelete() {
-  db = db.filter(c => c.id !== pendingDel);
-  save();
-  document.getElementById('deleteSheet').classList.remove('open');
-  renderList();
-}
-
-// Enter keys
-document.getElementById('newInput').addEventListener('keydown', e => { if (e.key==='Enter') createCounter(); });
-document.getElementById('renameInput').addEventListener('keydown', e => { if (e.key==='Enter') saveRename(); });
-document.getElementById('editCountInput').addEventListener('keydown', e => { if (e.key==='Enter') saveEditCount(); });
-document.getElementById('customStepInput').addEventListener('keydown', e => { if (e.key==='Enter') saveCustomStep(); });
+// enter keys
+['newInput,createCounter','renameInput,saveRename','editInput,saveEdit','customStepInput,saveCustomStep'].forEach(pair=>{
+  const[id,fn]=pair.split(',');
+  document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')window[fn]();});
+});
 
 // ── INIT ──
 setView(viewMode);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
 </html>
