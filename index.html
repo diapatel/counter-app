@@ -414,6 +414,42 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans'
 .color-swatch:active { transform: scale(0.88); }
 .color-swatch.picked { border-color: var(--text); }
 
+/* ── COUNT TABS ── */
+.count-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.count-tab {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+.count-tab.active {
+  color: var(--c-bright);
+}
+.count-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--c-bright);
+  border-radius: 2px;
+  transition: background 0.4s;
+}
+
 /* ── AD BANNER SPACE ── */
 .ad-banner {
   height: 60px;
@@ -477,13 +513,17 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans'
     </button>
   </div>
 
+  <div class="count-tabs">
+    <button class="count-tab active" id="tabTotal" onclick="switchTab('total')">Total</button>
+    <button class="count-tab" id="tabToday" onclick="switchTab('today')">Today</button>
+  </div>
+
   <div class="tap-zone" id="tapZone">
     <div class="ripple-layer" id="rippleLayer"></div>
     <div class="count-glow" id="ctrGlow"></div>
-    <div class="count-label-txt">COUNT</div>
+    <div class="count-label-txt" id="ctrLabel">TOTAL</div>
     <div class="count-num" id="ctrNum">0</div>
     <div class="hold-hint">Hold to edit</div>
-    <div class="today-txt" id="ctrToday">Today: <strong>0</strong></div>
     <div class="step-badge" id="stepBadge">+1 per tap</div>
   </div>
 
@@ -636,6 +676,7 @@ if (!db.length) {
 
 let activeId = null;
 let currentStep = 1;
+let activeTab = 'total';
 let viewMode = localStorage.getItem('vm') || 'list';
 let calDate = new Date();
 let calSel = null;
@@ -779,10 +820,21 @@ function tileDec(id) {
 
 function emptyHTML() { return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>Tap + to add a counter</p></div>`; }
 
+// ── TABS ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tabTotal').classList.toggle('active', tab === 'total');
+  document.getElementById('tabToday').classList.toggle('active', tab === 'today');
+  refreshCtr();
+}
+
 // ── OPEN COUNTER ──
 function openCounter(id) {
   activeId = id;
+  activeTab = 'total';
   currentStep = 1;
+  document.getElementById('tabTotal').classList.add('active');
+  document.getElementById('tabToday').classList.remove('active');
   document.querySelectorAll('.step-chip').forEach((c,i) => { c.classList.toggle('on', i===0); });
   document.getElementById('customChip').textContent = 'Custom…';
   document.getElementById('customChip').onclick = openCustomStepSheet;
@@ -797,10 +849,11 @@ function openCounter(id) {
 function refreshCtr() {
   const c = getC(activeId); if (!c) return;
   document.getElementById('ctrName').textContent = c.name;
+  const val = activeTab === 'total' ? c.total : todayOf(c);
   const el = document.getElementById('ctrNum');
-  el.textContent = c.total.toLocaleString();
-  el.classList.toggle('neg', c.total < 0);
-  document.getElementById('ctrToday').innerHTML = `Today: <strong>${todayOf(c)}</strong>`;
+  el.textContent = val.toLocaleString();
+  el.classList.toggle('neg', val < 0);
+  document.getElementById('ctrLabel').textContent = activeTab === 'total' ? 'TOTAL' : 'TODAY';
 }
 
 // ── TAP ──
@@ -809,6 +862,7 @@ function setupTap() {
   const numEl = document.getElementById('ctrNum');
   let pressTimer = null, didLong = false;
 
+  // Long press on number = edit
   numEl.ontouchstart = e => {
     didLong = false;
     pressTimer = setTimeout(() => {
@@ -819,15 +873,27 @@ function setupTap() {
   };
   numEl.ontouchend = e => {
     clearTimeout(pressTimer);
-    if (!didLong) { e.preventDefault(); e.stopPropagation(); const t=e.changedTouches[0]; doIncrement(t.clientX, t.clientY); }
+    // short tap on number = increment just like anywhere else
+    if (!didLong) {
+      e.preventDefault(); e.stopPropagation();
+      const t = e.changedTouches[0];
+      doIncrement(t.clientX, t.clientY);
+    }
   };
   numEl.ontouchmove = () => clearTimeout(pressTimer);
+
+  // desktop: long mousedown = edit, short click = increment
   numEl.onmousedown = () => { didLong=false; pressTimer=setTimeout(()=>{didLong=true;openEditSheet();},480); };
   numEl.onmouseup = () => clearTimeout(pressTimer);
-  numEl.onclick = e => { if(didLong) e.stopPropagation(); };
+  numEl.onclick = e => { if (didLong) { e.stopPropagation(); return; } doIncrement(e.clientX, e.clientY); };
 
-  zone.onclick = e => { if(e.target===numEl||e.target.closest&&e.target.closest('#ctrNum')) return; if(!e.target.closest('button')) doIncrement(e.clientX,e.clientY); };
-  zone.ontouchend = e => { if(e.target===numEl||(e.target.closest&&e.target.closest('#ctrNum'))) return; e.preventDefault(); if(!e.target.closest('button')){ const t=e.changedTouches[0]; doIncrement(t.clientX,t.clientY); }};
+  // rest of zone = increment too
+  zone.onclick = e => { if (e.target===numEl || (e.target.closest && e.target.closest('#ctrNum'))) return; if (!e.target.closest('button')) doIncrement(e.clientX, e.clientY); };
+  zone.ontouchend = e => {
+    if (e.target===numEl || (e.target.closest && e.target.closest('#ctrNum'))) return;
+    e.preventDefault();
+    if (!e.target.closest('button')) { const t=e.changedTouches[0]; doIncrement(t.clientX, t.clientY); }
+  };
 }
 
 function doTap(e) { const r=e.currentTarget.getBoundingClientRect(); doIncrement(r.left+r.width/2, r.top+r.height/2); }
@@ -903,22 +969,35 @@ function saveCustomStep() {
 
 // ── EDIT COUNT ──
 function openEditSheet() {
-  document.getElementById('editInput').value=getC(activeId).total;
+  const c = getC(activeId);
+  const val = activeTab === 'total' ? c.total : todayOf(c);
+  document.getElementById('editInput').value = val;
   document.getElementById('editCountSheet').classList.add('open');
   setTimeout(()=>{const i=document.getElementById('editInput');i.focus();i.select();},350);
 }
 
 function saveEdit() {
-  const v=parseInt(document.getElementById('editInput').value);
-  if(isNaN(v)){snack('Enter a valid number');return;}
-  const c=getC(activeId);
+  const v = parseInt(document.getElementById('editInput').value);
+  if (isNaN(v)) { snack('Enter a valid number'); return; }
+  const c = getC(activeId);
   c.hist.push(c.total);
-  // Update today's day count: replace it with the new total
-  // so the calendar reflects the manually set value
-  c.days[todayKey()] = Math.max(0, v);
-  c.total=v;
+  if (activeTab === 'total') {
+    // editing total: adjust today proportionally
+    const diff = v - c.total;
+    c.total = v;
+    const tk = todayKey();
+    c.days[tk] = Math.max(0, (c.days[tk] || 0) + diff);
+  } else {
+    // editing today: adjust total by the difference
+    const tk = todayKey();
+    const oldToday = c.days[tk] || 0;
+    const diff = v - oldToday;
+    c.days[tk] = Math.max(0, v);
+    c.total = c.total + diff;
+  }
   save(); refreshCtr(); popNum();
-  closeSheet('editCountSheet'); snack(`Count set to ${v.toLocaleString()}`);
+  closeSheet('editCountSheet');
+  snack(`${activeTab === 'total' ? 'Total' : 'Today'} set to ${v.toLocaleString()}`);
 }
 
 // ── CALENDAR ──

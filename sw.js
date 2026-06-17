@@ -1,4 +1,4 @@
-const CACHE = 'counter-v1';
+const CACHE = 'counter-v2';
 const FILES = [
   '/index.html',
   '/manifest.json',
@@ -7,9 +7,7 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(FILES))
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
   self.skipWaiting();
 });
 
@@ -23,7 +21,15 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Network first — always try to get fresh version, fall back to cache
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        // update cache with fresh response
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
