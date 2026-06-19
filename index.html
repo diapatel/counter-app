@@ -553,6 +553,10 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans'
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
       <span>Reset</span>
     </button>
+    <button class="act-btn" onclick="recalcTotal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Fix Total</span>
+    </button>
   </div>
   <div class="ad-banner">Advertisement</div>
 </div>
@@ -925,6 +929,15 @@ function doReset() {
   delete c.days[todayKey()];
   save(); refreshCtr(); popNum();
   snack(`Today's count reset`);
+}
+
+function recalcTotal() {
+  const c = getC(activeId);
+  const realTotal = Object.values(c.days).reduce((a, b) => a + b, 0);
+  c.hist.push(c.total);
+  c.total = realTotal;
+  save(); refreshCtr(); popNum();
+  snack(`Total recalculated to ${realTotal.toLocaleString()}`);
 }
 
 function popNum() {
