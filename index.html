@@ -918,9 +918,13 @@ function doUndo() {
 
 function doReset() {
   const c = getC(activeId);
-  if (c.total===0) { snack('Already at 0'); return; }
-  c.hist=[]; delete c.days[todayKey()]; c.total=0;
-  save(); refreshCtr(); popNum(); snack('Counter reset');
+  const todayCount = todayOf(c);
+  if (todayCount === 0) { snack("Nothing to reset today"); return; }
+  c.hist.push(c.total);
+  c.total = c.total - todayCount;
+  delete c.days[todayKey()];
+  save(); refreshCtr(); popNum();
+  snack(`Today's count reset`);
 }
 
 function popNum() {
