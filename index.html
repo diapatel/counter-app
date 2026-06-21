@@ -536,6 +536,7 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans'
       <button class="step-chip" onclick="setStep(25,this)">25</button>
       <button class="step-chip" onclick="setStep(50,this)">50</button>
       <button class="step-chip" onclick="setStep(100,this)">100</button>
+      <button class="step-chip" onclick="setStep(108,this)">108</button>
       <button class="step-chip" id="customChip" onclick="openCustomStepSheet()">Custom…</button>
     </div>
   </div>
@@ -654,14 +655,24 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'DM Sans'
 <script>
 // ── COLORS ──
 const PALETTE = [
-  { hex: '#7C6FCD', bg: '#0E0D18', bright: '#A99EE8', r: '124,111,205' },
-  { hex: '#E8587A', bg: '#160C10', bright: '#F28FA5', r: '232,88,122'  },
-  { hex: '#3EA8A0', bg: '#08100F', bright: '#6DCCC5', r: '62,168,160'  },
-  { hex: '#E8905A', bg: '#150D07', bright: '#F2B48A', r: '232,144,90'  },
-  { hex: '#5A9FE8', bg: '#080F16', bright: '#8AC3F2', r: '90,159,232'  },
-  { hex: '#B85AE8', bg: '#110815', bright: '#D48AF2', r: '184,90,232'  },
-  { hex: '#5AE87C', bg: '#08150D', bright: '#8AF29E', r: '90,232,124'  },
-  { hex: '#E8D45A', bg: '#151208', bright: '#F2E48A', r: '232,212,90'  },
+  // dark backgrounds — light text
+  { bg: '#1A0533', text: '#F0EEF8', num: '#D4BAFF', dim: '#9B7FC2', name: 'Deep Purple',  r:'130,80,200' },
+  { bg: '#0A1628', text: '#F0EEF8', num: '#7EB8F7', dim: '#4A7AAF', name: 'Midnight Blue', r:'70,140,220' },
+  { bg: '#0D2018', text: '#F0EEF8', num: '#6DEBA0', dim: '#3A8A5A', name: 'Forest',        r:'60,180,100' },
+  { bg: '#1A0A0A', text: '#F0EEF8', num: '#F28A8A', dim: '#A84040', name: 'Crimson Night', r:'210,80,80'  },
+  { bg: '#0F0F1A', text: '#F0EEF8', num: '#A0C4FF', dim: '#506080', name: 'Slate',         r:'100,140,210'},
+  { bg: '#1A1200', text: '#F0EEF8', num: '#FFD97D', dim: '#A07A00', name: 'Midnight Gold',  r:'210,170,50'},
+  { bg: '#120A1A', text: '#F0EEF8', num: '#E88AF2', dim: '#8A3A9A', name: 'Galaxy',        r:'180,80,210' },
+  { bg: '#001A18', text: '#F0EEF8', num: '#5AECD8', dim: '#1A8A7A', name: 'Deep Teal',     r:'50,180,170' },
+  // vivid backgrounds — dark text
+  { bg: '#FFD6E0', text: '#1A0A10', num: '#C0003A', dim: '#800028', name: 'Rose',          r:'255,100,140'},
+  { bg: '#D6EAFF', text: '#040F1A', num: '#005BB5', dim: '#003A80', name: 'Sky',           r:'80,160,240' },
+  { bg: '#D6FFE8', text: '#041A0C', num: '#007A38', dim: '#004A20', name: 'Mint',          r:'60,200,120' },
+  { bg: '#FFF3D6', text: '#1A0F00', num: '#A06000', dim: '#704000', name: 'Honey',         r:'240,180,60' },
+  { bg: '#EDD6FF', text: '#0F0018', num: '#7000C0', dim: '#4A0080', name: 'Lavender',      r:'160,80,220' },
+  { bg: '#FFE8D6', text: '#1A0800', num: '#C05000', dim: '#803000', name: 'Peach',         r:'240,130,60' },
+  { bg: '#D6FFF8', text: '#001A14', num: '#007A6A', dim: '#004A40', name: 'Aqua',          r:'50,200,180' },
+  { bg: '#F5F5F5', text: '#111111', num: '#333333', dim: '#777777', name: 'White',         r:'100,100,100'},
 ];
 
 // ── DATA ──
@@ -693,13 +704,48 @@ function getColor(idx) { return PALETTE[idx % PALETTE.length]; }
 function applyColor(idx) {
   const col = getColor(idx);
   const r = document.documentElement;
-  r.style.setProperty('--c', col.hex);
-  r.style.setProperty('--c-bright', col.bright);
-  r.style.setProperty('--c-dim', `rgba(${col.r},0.15)`);
-  r.style.setProperty('--c-glow', `rgba(${col.r},0.22)`);
+  r.style.setProperty('--c', col.num);
+  r.style.setProperty('--c-bright', col.num);
+  r.style.setProperty('--c-dim', `rgba(${col.r},0.18)`);
+  r.style.setProperty('--c-glow', `rgba(${col.r},0.25)`);
   r.style.setProperty('--c-bg', col.bg);
   r.style.setProperty('--cr', col.r);
-  document.getElementById('counterScreen').style.background = col.bg;
+  // full background color
+  const screen = document.getElementById('counterScreen');
+  screen.style.background = col.bg;
+  // adapt text colors for light vs dark backgrounds
+  screen.style.setProperty('--text', col.text);
+  screen.style.color = col.text;
+  // update icon buttons and labels
+  screen.querySelectorAll('.icon-btn, .count-label-txt, .hold-hint, .step-lbl, .ctr-rename-hint, .count-tab').forEach(el => {
+    el.style.color = col.dim;
+  });
+  screen.querySelectorAll('.count-tab.active').forEach(el => el.style.color = col.num);
+  screen.querySelectorAll('.ctr-name-text, .today-txt').forEach(el => el.style.color = col.text);
+  // action bar and step chips adapt
+  screen.querySelectorAll('.act-btn:not(.primary)').forEach(el => {
+    el.style.background = `rgba(${col.r},0.12)`;
+    el.style.borderColor = `rgba(${col.r},0.2)`;
+    el.style.color = col.text;
+  });
+  screen.querySelectorAll('.step-chip').forEach(el => {
+    el.style.borderColor = `rgba(${col.r},0.25)`;
+    el.style.color = col.dim;
+  });
+  screen.querySelectorAll('.step-chip.on').forEach(el => {
+    el.style.background = `rgba(${col.r},0.2)`;
+    el.style.borderColor = col.num;
+    el.style.color = col.num;
+  });
+  // primary button uses num color as background
+  const primary = screen.querySelector('.act-btn.primary');
+  if (primary) { primary.style.background = col.num; primary.style.color = col.bg; }
+  // count tabs border
+  screen.querySelector('.count-tabs').style.borderBottomColor = `rgba(${col.r},0.2)`;
+  // ad banner
+  screen.querySelector('.ad-banner').style.background = `rgba(${col.r},0.08)`;
+  screen.querySelector('.ad-banner').style.borderTopColor = `rgba(${col.r},0.15)`;
+  screen.querySelector('.ad-banner').style.color = col.dim;
 }
 
 // ── NAVIGATION ──
@@ -771,7 +817,7 @@ function renderList() {
     const col = getColor(c.colorIdx || 0);
     const today = todayOf(c);
     return `<div class="ctr-row" onclick="openCounter(${c.id})"
-      style="--c:${col.hex};--c-bright:${col.bright};--c-dim:rgba(${col.r},0.15)">
+      style="--c:${col.num};--c-bright:${col.num};--c-dim:rgba(${col.r},0.15)">
       <div class="ctr-row-info">
         <div class="ctr-row-name">${esc(c.name)}</div>
         <div class="ctr-row-meta">
@@ -796,13 +842,13 @@ function renderTiles() {
     const col = getColor(c.colorIdx || 0);
     const today = todayOf(c);
     return `<div class="ctr-tile" onclick="openCounter(${c.id})"
-      style="--c:${col.hex};--c-bright:${col.bright};--c-dim:rgba(${col.r},0.15);--c-glow:rgba(${col.r},0.2)">
-      <div class="tile-name">${esc(c.name)}</div>
-      <div class="tile-num" id="tn-${c.id}">${c.total.toLocaleString()}</div>
-      <div class="tile-today" id="tt-${c.id}">${today > 0 ? `Today: <strong>${today}</strong>` : '&nbsp;'}</div>
+      style="background:${col.bg};--c:${col.num};--c-bright:${col.num};--c-dim:rgba(${col.r},0.18);--c-glow:rgba(${col.r},0.2);color:${col.text}">
+      <div class="tile-name" style="color:${col.dim}">${esc(c.name)}</div>
+      <div class="tile-num" id="tn-${c.id}" style="color:${col.num}">${c.total.toLocaleString()}</div>
+      <div class="tile-today" id="tt-${c.id}" style="color:${col.dim}">${today > 0 ? `Today: <strong style="color:${col.num}">${today}</strong>` : '&nbsp;'}</div>
       <div class="tile-btns">
-        <button class="tile-btn tm" onclick="event.stopPropagation();tileDec(${c.id})">−</button>
-        <button class="tile-btn tp" onclick="event.stopPropagation();tileInc(${c.id})">+</button>
+        <button class="tile-btn tm" style="background:rgba(${col.r},0.15);color:${col.num}" onclick="event.stopPropagation();tileDec(${c.id})">−</button>
+        <button class="tile-btn tp" style="background:rgba(${col.r},0.25);color:${col.num}" onclick="event.stopPropagation();tileInc(${c.id})">+</button>
       </div>
     </div>`;
   }).join('');
@@ -1074,14 +1120,19 @@ function calcStreak(c){let s=0,d=new Date();while(true){const k=`${d.getFullYear
 // ── SHEETS ──
 function buildColorRow(){
   const el=document.getElementById('colorRow');
-  el.innerHTML=PALETTE.map((col,i)=>`<div class="color-swatch${i===pickedColor?' picked':''}" style="background:${col.hex}" onclick="pickColor(${i})"></div>`).join('');
-  document.getElementById('newConfirmBtn').style.background=PALETTE[pickedColor].hex;
+  el.innerHTML=PALETTE.map((col,i)=>`
+    <div class="color-swatch${i===pickedColor?' picked':''}" 
+      style="background:${col.bg};border:3px solid ${i===pickedColor?col.num:'transparent'};box-shadow:inset 0 0 0 1px rgba(255,255,255,0.1)" 
+      title="${col.name}"
+      onclick="pickColor(${i})">
+    </div>`).join('');
+  document.getElementById('newConfirmBtn').style.background=PALETTE[pickedColor].num;
+  document.getElementById('newConfirmBtn').style.color=PALETTE[pickedColor].bg;
 }
 
 function pickColor(i){
   pickedColor=i;
-  document.querySelectorAll('.color-swatch').forEach((s,j)=>s.classList.toggle('picked',j===i));
-  document.getElementById('newConfirmBtn').style.background=PALETTE[i].hex;
+  buildColorRow();
 }
 
 function openNewSheet(){
